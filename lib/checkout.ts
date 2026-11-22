@@ -1,4 +1,5 @@
 import { convertArs } from "./fx";
+import { payConfig } from "./payments/config";
 import { markPaid, orders } from "./orders";
 import { chargeCurrency, createPayment, mp, PAY_METHODS, stellar, stripe, type Order, type PayMethod, type PayResult } from "./payments/index";
 
@@ -69,8 +70,14 @@ export async function buildOrder(input: CheckoutInput, lookup: (id: string) => P
   };
 }
 
-export async function startPayment(order: Order): Promise<PayResult> {
-  const result = await createPayment(order);
+/** URL pública a la que vuelve el proveedor: APP_BASE_URL si es https; si no, el dominio desde el que llegó el pedido. */
+export function resolveBaseUrl(configured: string, origin?: string): string {
+  if (configured.startsWith("https://") || !origin) return configured;
+  return origin;
+}
+
+export async function startPayment(order: Order, origin?: string): Promise<PayResult> {
+  const result = await createPayment(order, resolveBaseUrl(payConfig().publicUrl, origin));
   order.live = result.live;
   order.providerRef = result.providerRef;
   orders.put(order);

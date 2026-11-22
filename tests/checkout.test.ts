@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildOrder, parseCheckoutBody, type PricedListing } from "../lib/checkout";
+import { buildOrder, parseCheckoutBody, resolveBaseUrl, type PricedListing } from "../lib/checkout";
 import { chargeCurrency } from "../lib/payments/types";
 
 const catalog = new Map<string, PricedListing>([
@@ -42,4 +42,10 @@ test("la moneda de cobro depende del medio", () => {
   assert.equal(chargeCurrency("stellar", "EUR"), "USD");
   assert.equal(chargeCurrency("stripe", "EUR"), "EUR");
   assert.equal(chargeCurrency("stripe", "CLP"), "USD");
+});
+
+test("la URL de vuelta usa el dominio real si APP_BASE_URL no es https", () => {
+  assert.equal(resolveBaseUrl("http://localhost:3000", "https://app.vercel.app"), "https://app.vercel.app");
+  assert.equal(resolveBaseUrl("https://mi-dominio.com", "https://otro.vercel.app"), "https://mi-dominio.com");
+  assert.equal(resolveBaseUrl("http://localhost:3000"), "http://localhost:3000");
 });

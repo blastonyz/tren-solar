@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   if (!built.ok) return Response.json({ error: built.error }, { status: 422 });
 
   try {
-    const payment = await startPayment(built.order);
+    const payment = await startPayment(built.order, request.nextUrl.origin);
     const { order } = built;
     return Response.json(
       {

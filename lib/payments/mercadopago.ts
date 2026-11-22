@@ -5,9 +5,10 @@ import type { Order, PayResult } from "./types";
 const API = "https://api.mercadopago.com";
 const headers = () => ({ Authorization: `Bearer ${payConfig().mpToken}`, "Content-Type": "application/json" });
 
-export async function create(order: Order): Promise<PayResult> {
+export async function create(order: Order, baseUrl?: string): Promise<PayResult> {
   if (!live.mp()) return { url: null, live: false };
-  const { publicUrl, mpToken } = payConfig();
+  const { mpToken } = payConfig();
+  const publicUrl = baseUrl ?? payConfig().publicUrl;
   const body = {
     items: [
       {
@@ -19,13 +20,14 @@ export async function create(order: Order): Promise<PayResult> {
       },
     ],
     external_reference: order.id,
-    notification_url: `${publicUrl}/api/mp/webhook`,
+    ...(publicUrl.startsWith("https://") ? { notification_url: `${publicUrl}/api/mp/webhook` } : {}),
     back_urls: {
       success: `${publicUrl}/?order=${order.id}`,
       failure: `${publicUrl}/?order=${order.id}`,
       pending: `${publicUrl}/?order=${order.id}`,
     },
-    auto_return: "approved",
+    // Mercado Pago rechaza auto_return si las back_urls no son públicas (https): en local se omite.
+    ...(publicUrl.startsWith("https://") ? { auto_return: "approved" } : {}),
   };
   const response = await fetch(`${API}/checkout/preferences`, { method: "POST", headers: headers(), body: JSON.stringify(body) });
   const json = (await response.json()) as { id?: string; init_point?: string; sandbox_init_point?: string; message?: string };

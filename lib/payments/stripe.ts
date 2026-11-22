@@ -5,9 +5,9 @@ import type { Order, PayResult } from "./types";
 const API = "https://api.stripe.com/v1";
 const headers = () => ({ Authorization: `Bearer ${payConfig().stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" });
 
-export async function create(order: Order): Promise<PayResult> {
+export async function create(order: Order, baseUrl?: string): Promise<PayResult> {
   if (!live.stripe()) return { url: null, live: false };
-  const { publicUrl } = payConfig();
+  const publicUrl = baseUrl ?? payConfig().publicUrl;
   const form = new URLSearchParams({
     mode: "payment",
     "line_items[0][quantity]": "1",
