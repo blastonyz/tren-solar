@@ -20,6 +20,7 @@ if (!chunks.cube_uv_reflection_fragment) {
 }
 
 const MODEL_URL = "/models/mesh.glb";
+const STATION_URL = "/models/estacion_volcan.glb";
 const DRACO_DECODER = "/draco/";
 
 const SCENES = [
@@ -49,13 +50,24 @@ function Train() {
 
 useGLTF.preload(MODEL_URL, DRACO_DECODER, true);
 
+/**
+ * Estación "Volcán" (Blender, Z arriba). La fachada mira hacia las vías y el andén queda
+ * del lado +Z; el giro de 180° en Y lo pasa al fondo para que la fachada mire a la cámara inicial.
+ */
+function Station() {
+  const { scene } = useGLTF(STATION_URL, DRACO_DECODER, true);
+  return <primitive object={scene} rotation={[0, Math.PI, 0]} />;
+}
+
+useGLTF.preload(STATION_URL, DRACO_DECODER, true);
+
 function Loader() {
   const { active, progress } = useProgress();
   if (!active) return null;
   return (
     <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-black/70">
       <p className="text-sm tracking-[0.3em] text-amber-100/80 uppercase">
-        Cargando tren · {Math.round(progress)}%
+        Cargando escena · {Math.round(progress)}%
       </p>
     </div>
   );
@@ -79,7 +91,10 @@ export function Experience() {
             background
             ground={{ height: 5, radius: 90, scale: 90 }}
           />
-          <Train />
+          <group position={[0, 0.2, 0]}>
+            <Train />
+            <Station />
+          </group>
           <ContactShadows position={[0, 0.01, 0]} opacity={0.55} scale={30} blur={2.4} far={6} />
         </Suspense>
         <OrbitControls
