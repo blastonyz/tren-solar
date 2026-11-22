@@ -247,8 +247,11 @@ Las variables viven en `.env`, en la raíz del proyecto. Git ya ignora ese archi
 | `MP_ACCESS_TOKEN` | Token de acceso de prueba de Mercado Pago | `POST /api/checkout` y `POST /api/mp/webhook` | Pendiente (tarea 16) |
 | `NEXT_PUBLIC_MP_PUBLIC_KEY` | Clave pública de prueba de Mercado Pago (puede ir al navegador) | Front | Pendiente (tarea 16) |
 | `APP_BASE_URL` | URL pública de la app (túnel o deploy), para `back_urls` y `notification_url` | `POST /api/checkout` | Pendiente |
+| `VONAGE_SIGNATURE_SECRET` | Secreto de firma de la cuenta Vonage (Settings del panel), distinto del secreto de API. Valida el JWT de los webhooks | `POST /api/whatsapp` | Pendiente; sin él la firma no se valida en desarrollo y en producción el webhook responde 503 |
+| `VONAGE_WHATSAPP_NUMBER` | Número del Sandbox que envía los avisos | `POST /api/notify` | Opcional; por defecto `14157386102` |
+| `NOTIFY_TOKEN` | Si está, `POST /api/notify` pide `Authorization: Bearer <NOTIFY_TOKEN>` | `POST /api/notify` | Opcional |
 
-Por el formato de los valores cargados, `MASTER_KEY` parece ser la clave de API de la cuenta (el usuario de Basic) y `VONAGE_API_KEY` su secreto (la contraseña). Falta confirmarlo contra el panel de Vonage antes de implementar el envío.
+Por el largo de los valores cargados (8 y 16 caracteres, el formato de la clave y el secreto de Vonage), `MASTER_KEY` es la clave de API de la cuenta (el usuario de Basic) y `VONAGE_API_KEY` su secreto (la contraseña). Así lo usa `lib/vonage.ts`. Sin las dos, los envíos se simulan y solo se escriben en el log del servidor.
 
 ### 8.2 Plantilla
 
@@ -262,6 +265,9 @@ MONGO_DB_URI=
 MP_ACCESS_TOKEN=
 NEXT_PUBLIC_MP_PUBLIC_KEY=
 APP_BASE_URL=
+VONAGE_SIGNATURE_SECRET=
+VONAGE_WHATSAPP_NUMBER=
+NOTIFY_TOKEN=
 ```
 
 ### 8.3 Reglas de uso
@@ -368,7 +374,9 @@ Los umbrales son una propuesta para calibrar.
 | Autorización | Cada teléfono manda `PASS_PHRASE` al número del Sandbox. Solo los teléfonos autorizados reciben avisos |
 | Entrante | Vonage llama a `POST /api/whatsapp`. La ruta lee el comando y devuelve 200; la respuesta sale por una llamada aparte |
 | Saliente | `POST https://messages-sandbox.nexmo.com/v1/messages` con autenticación Basic (`MASTER_KEY` y `VONAGE_API_KEY`) y `channel: "whatsapp"` |
-| Validación | Se verifica el JWT firmado del encabezado `Authorization`. Revisar la documentación vigente de webhooks firmados antes de implementarlo |
+| Validación | Vonage firma cada webhook con un JWT HS256 en `Authorization: Bearer`, usando el secreto de firma de la cuenta (`VONAGE_SIGNATURE_SECRET`). Se verifica la firma, la antigüedad (`iat`, 5 minutos), el `api_key` y que `payload_hash` sea el SHA-256 del cuerpo |
+| Límites | El Sandbox acepta 1 mensaje por segundo y 100 por mes: `POST /api/notify` espacia los envíos y no repite un `dedupeKey` al mismo teléfono |
+| Webhooks en el panel | Inbound y Status apuntan a `https://<túnel>/api/whatsapp`; los estados se ignoran con 200 |
 
 Comandos que entiende el webhook:
 
@@ -404,7 +412,7 @@ Ya no hay reparto por persona: es un solo listado y cualquiera (o cualquier agen
 | 6 | `GET /api/telemetry` con datos simulados | Devuelve el JSON del contrato | Hecha |
 | 7 | `GET /api/weather` (proxy de Open-Meteo con caché) y `GET /api/fires` (FIRMS con respaldo en fixture) | Ambos responden sin internet usando fixtures | Hecha; los focos salen del fixture de ejemplo hasta tener `FIRMS_MAP_KEY` (tarea 3) |
 | 8 | `GET /api/alerts`: motor de reglas de crecida, fuego y aglomeración | Genera al menos una alerta por regla con datos de ejemplo | Hecha; faltan las alertas tempranas (tarea 20) |
-| 9 | `POST /api/whatsapp` (webhook entrante de Vonage con validación de firma) y `POST /api/notify` | Un mensaje "alertas" devuelve la lista actual | Pendiente |
+| 9 | `POST /api/whatsapp` (webhook entrante de Vonage con validación de firma) y `POST /api/notify` | Un mensaje "alertas" devuelve la lista actual | Hecha (`lib/vonage.ts`, `lib/whatsapp.ts`, `lib/notify.ts`, con tests). También `POST /api/subscribe`. Las suscripciones viven en memoria hasta la tarea 18. Falta probarlo con un teléfono real (tarea 2) y cargar `VONAGE_SIGNATURE_SECRET` |
 | 18 | Capa de repositorio con `mongo` y `seed`, esquemas, índices y script `npm run seed` | La API funciona igual con `DATA_SOURCE=seed` y con `mongo` | Pendiente |
 | 19 | `GET /api/towns`, `GET /api/catalog` y `PUT /api/trips/[id]` | El front lista ítems por estación y categoría | Pendiente |
 | 20 | Caudal (Open-Meteo Flood), alertas tempranas con `dedupeKey` y cálculo de `suitability` | Una excursión cambia de verde a rojo con un fixture de lluvia o de foco de calor | Pendiente |
@@ -457,8 +465,7 @@ El camino crítico es contrato, API con fixtures, front sobre la API y recién d
 
 ## 13. Preguntas abiertas
 
-- Cuál de `MASTER_KEY` y `VONAGE_API_KEY` es la clave de API y cuál el secreto (ver [Variables](#81-variables)).
-- Con qué secreto se valida la firma del webhook. Si Vonage usa un secreto de firma distinto de las credenciales de la cuenta, hace falta una variable más.
+- Confirmar en el panel de Vonage que `MASTER_KEY` es la clave y `VONAGE_API_KEY` el secreto (ver [Variables](#81-variables)).
 - De quién es la cuenta de Mercado Pago de prueba y quién la administra.
 - Si mostramos `communityShare` como dato real (acuerdo con comunidades) o como ejemplo en la demo.
 - Quién es el dueño del repo `jujuy-pay` para aprobar el PR.
