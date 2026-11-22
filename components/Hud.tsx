@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Telemetry } from "@/lib/types";
 
 const TOWNS = [
   { name: "Purmamarca", base: 92 },
@@ -12,7 +13,7 @@ const TOWNS = [
 
 const wave = (t: number, phase: number, amp: number) => Math.sin(t / 3 + phase) * amp;
 
-export function Hud() {
+export function Hud({ telemetry }: { telemetry: Telemetry | null }) {
   const [t, setT] = useState(0);
 
   useEffect(() => {
@@ -20,9 +21,13 @@ export function Hud() {
     return () => clearInterval(id);
   }, []);
 
-  const solar = 38 + wave(t, 0, 6);
-  const battery = 78 + wave(t, 1, 4);
-  const passengers = Math.round(118 + wave(t, 2, 9));
+  const solar = telemetry?.train.solarKw ?? 38 + wave(t, 0, 6);
+  const battery = telemetry?.train.batteryPct ?? 78 + wave(t, 1, 4);
+  const passengers = telemetry?.train.passengers ?? Math.round(118 + wave(t, 2, 9));
+
+  const rows = telemetry
+    ? telemetry.towns.filter((town) => town.townId !== "volcan").map((town) => ({ name: town.town, pct: town.occupancyPct }))
+    : TOWNS.map((town, i) => ({ name: town.name, pct: Math.max(5, Math.min(100, Math.round(town.base + wave(t, i, 4)))) }));
 
   return (
     <aside className="pointer-events-auto w-full rounded-2xl border border-white/15 bg-black/40 p-4 backdrop-blur-md sm:w-80">
@@ -43,8 +48,8 @@ export function Hud() {
         Ocupación por pueblo
       </p>
       <ul className="space-y-2">
-        {TOWNS.map((town, i) => {
-          const pct = Math.max(5, Math.min(100, Math.round(town.base + wave(t, i, 4))));
+        {rows.map((town) => {
+          const pct = town.pct;
           return (
             <li key={town.name}>
               <div className="flex justify-between text-xs text-white/80">

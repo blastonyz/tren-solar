@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   ContactShadows,
   Environment,
@@ -9,8 +9,14 @@ import {
   useGLTF,
   useProgress,
 } from "@react-three/drei";
-import { ShaderChunk } from "three";
+import { ShaderChunk, Vector3, type Vector3Tuple } from "three";
+import { TOWNS } from "@/lib/route";
 import { Hud } from "./Hud";
+import { RouteBar } from "./RouteBar";
+import { StationPanel } from "./StationPanel";
+import { TripDrawer } from "./TripDrawer";
+import { TripProvider, useTrip } from "./trip";
+import { useAlerts, useTelemetry } from "./live";
 
 // three r181+ eliminó este chunk. El suelo proyectado de drei igual lo incluye,
 // y el include que no resuelve tira en cada frame.
@@ -73,24 +79,112 @@ function Loader() {
   );
 }
 
-export function Experience() {
-  const [sceneId, setSceneId] = useState<(typeof SCENES)[number]["id"]>("sunrise");
+type SceneId = (typeof SCENES)[number]["id"];
+
+/** Ambiente que acompaña a cada estación. El visitante puede cambiarlo con los botones. */
+const STATION_SCENE: Record<string, SceneId> = {
+  volcan: "sunrise",
+  purmamarca: "canyon",
+  maimara: "pan",
+  tilcara: "dusk",
+  uquia: "sunrise",
+  humahuaca: "canyon",
+};
+
+interface CameraGoal {
+  position: Vector3Tuple;
+  target: Vector3Tuple;
+}
+
+const HOME_GOAL: CameraGoal = { position: [11, 3.2, 15], target: [0, 1.6, 0] };
+
+/** Cada estación mira el tren desde un ángulo distinto; el objetivo corrido deja lugar al panel. */
+function goalForStation(index: number): CameraGoal {
+  const angle = -0.85 + index * 0.34;
+  const radius = 14 + (index % 2) * 3;
+  const height = 2.4 + (index % 3) * 0.8;
+  return {
+    position: [Math.sin(angle) * radius, height, Math.cos(angle) * radius],
+    target: [2.2, 1.6, 0],
+  };
+}
+
+/** Lleva la cámara a un objetivo con suavidad y suelta el control apenas el visitante la toca. */
+function CameraRig({ goal }: { goal: CameraGoal }) {
+  const camera = useThree((state) => state.camera);
+  const controls = useThree((state) => state.controls) as unknown as {
+    target: Vector3;
+    update: () => void;
+    addEventListener: (type: string, listener: () => void) => void;
+    removeEventListener: (type: string, listener: () => void) => void;
+  } | null;
+  const goalPosition = useMemo(() => new Vector3(...goal.position), [goal]);
+  const goalTarget = useMemo(() => new Vector3(...goal.target), [goal]);
+  const done = useRef(false);
+
+  useEffect(() => {
+    done.current = false;
+  }, [goal]);
+
+  useEffect(() => {
+    if (!controls) return;
+    const stop = () => {
+      done.current = true;
+    };
+    controls.addEventListener("start", stop);
+    return () => controls.removeEventListener("start", stop);
+  }, [controls]);
+
+  useFrame((_, delta) => {
+    if (done.current || !controls) return;
+    const k = 1 - Math.exp(-delta * 2.4);
+    camera.position.lerp(goalPosition, k);
+    controls.target.lerp(goalTarget, k);
+    controls.update();
+    if (camera.position.distanceTo(goalPosition) < 0.05 && controls.target.distanceTo(goalTarget) < 0.05) {
+      done.current = true;
+    }
+  });
+  return null;
+}
+
+function TripButton({ onClick }: { onClick: () => void }) {
+  const trip = useTrip();
+  return (
+    <button
+      onClick={onClick}
+      className="pointer-events-auto rounded-full border border-amber-200/60 bg-amber-200/15 px-4 py-2 text-sm text-amber-50 backdrop-blur transition hover:bg-amber-200/25"
+    >
+      Mi viaje{trip.count > 0 ? ` · ${trip.count}` : ""}
+    </button>
+  );
+}
+
+function ExperienceInner() {
+  const [sceneId, setSceneId] = useState<SceneId>("sunrise");
+  const [started, setStarted] = useState(false);
+  const [townId, setTownId] = useState<string | null>(null);
+  const [tripOpen, setTripOpen] = useState(false);
+  const telemetry = useTelemetry();
+  const alerts = useAlerts() ?? [];
+
   const current = SCENES.find((s) => s.id === sceneId) ?? SCENES[0];
+  const goal = useMemo(() => {
+    if (!townId) return HOME_GOAL;
+    return goalForStation(Math.max(0, TOWNS.findIndex((t) => t.id === townId)));
+  }, [townId]);
+
+  const selectTown = (id: string) => {
+    setTownId(id);
+    setSceneId(STATION_SCENE[id] ?? "sunrise");
+  };
+  const topAlert = alerts[0];
 
   return (
-    <main className="relative h-full w-full">
-      <Canvas
-        className="absolute inset-0"
-        camera={{ position: [11, 3.2, 15], fov: 38 }}
-        dpr={[1, 1.5]}
-      >
+    <main className="relative h-full w-full overflow-hidden">
+      <Canvas className="absolute inset-0" camera={{ position: HOME_GOAL.position, fov: 38 }} dpr={[1, 1.5]}>
         <Suspense fallback={null}>
-          <Environment
-            key={current.id}
-            files={current.file}
-            background
-            ground={{ height: 5, radius: 90, scale: 90 }}
-          />
+          <Environment key={current.id} files={current.file} background ground={{ height: 5, radius: 90, scale: 90 }} />
           <group position={[0, 0.2, 0]}>
             <Train />
             <Station />
@@ -98,50 +192,96 @@ export function Experience() {
           <ContactShadows position={[0, 0.01, 0]} opacity={0.55} scale={30} blur={2.4} far={6} />
         </Suspense>
         <OrbitControls
-          target={[0, 1.6, 0]}
+          makeDefault
+          target={HOME_GOAL.target}
           enablePan={false}
-          autoRotate
+          autoRotate={!townId}
           autoRotateSpeed={0.45}
           minDistance={9}
           maxDistance={32}
           maxPolarAngle={Math.PI / 2 - 0.03}
         />
+        <CameraRig goal={goal} />
       </Canvas>
 
       <Loader />
 
-      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-5 sm:p-8">
-        <header>
-          <p className="text-[11px] tracking-[0.35em] text-amber-100/70 uppercase">
-            Quebrada de Humahuaca · Jujuy
-          </p>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-6xl">
-            Tren Solar
-          </h1>
-          <p className="mt-2 max-w-md text-sm text-white/70 sm:text-base">
-            Turismo y economías regionales del NOA, medidos en tiempo real.
-          </p>
+      {/* Velos para que el texto se lea sobre ambientes claros */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-44 bg-gradient-to-b from-black/60 to-transparent" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-48 bg-gradient-to-t from-black/50 to-transparent" />
+
+      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between gap-3 p-4 sm:p-8">
+        <header className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] tracking-[0.35em] text-amber-100/70 uppercase">Quebrada de Humahuaca · Jujuy</p>
+            <h1 className={`mt-2 font-semibold tracking-tight transition-all ${started ? "text-3xl sm:text-4xl" : "text-4xl sm:text-6xl"}`}>
+              Tren Solar
+            </h1>
+            {!started && (
+              <p className="mt-2 max-w-md text-sm text-white/70 sm:text-base">
+                Turismo y economías regionales del NOA, medidos en tiempo real.
+              </p>
+            )}
+            {started && topAlert && (
+              <p className="mt-2 inline-block max-w-md rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-xs text-amber-100">
+                {alerts.length} {alerts.length === 1 ? "alerta vigente" : "alertas vigentes"} · {topAlert.message}
+              </p>
+            )}
+          </div>
+          {started && <TripButton onClick={() => setTripOpen(true)} />}
         </header>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <nav className="pointer-events-auto flex flex-wrap gap-2">
-            {SCENES.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSceneId(s.id)}
-                className={`rounded-full border px-4 py-1.5 text-xs backdrop-blur transition ${
-                  s.id === sceneId
-                    ? "border-amber-200/80 bg-amber-200/20 text-amber-50"
-                    : "border-white/20 bg-black/30 text-white/70 hover:border-white/50"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </nav>
-          <Hud />
+        {started && townId && (
+          <div className="pointer-events-none absolute top-24 right-4 bottom-44 flex w-[calc(100%-2rem)] max-w-md sm:top-28 sm:right-8 sm:bottom-48">
+            <StationPanel key={townId} townId={townId} alerts={alerts} telemetry={telemetry} onClose={() => setTownId(null)} />
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <nav className="pointer-events-auto flex flex-wrap gap-2">
+              {SCENES.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSceneId(s.id)}
+                  className={`rounded-full border px-4 py-1.5 text-xs backdrop-blur transition ${
+                    s.id === sceneId
+                      ? "border-amber-200/80 bg-amber-200/20 text-amber-50"
+                      : "border-white/20 bg-black/30 text-white/70 hover:border-white/50"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </nav>
+            {!started && (
+              <div className="pointer-events-auto flex flex-col items-end gap-3">
+                <button
+                  onClick={() => {
+                    setStarted(true);
+                    selectTown("volcan");
+                  }}
+                  className="rounded-full bg-amber-300 px-7 py-3 text-sm font-semibold text-black shadow-[0_0_30px_rgba(251,191,36,0.35)] transition hover:bg-amber-200"
+                >
+                  Empezar viaje
+                </button>
+                <Hud telemetry={telemetry} />
+              </div>
+            )}
+          </div>
+          {started && <RouteBar selectedId={townId} onSelect={selectTown} telemetry={telemetry} alerts={alerts} />}
         </div>
       </div>
+
+      <TripDrawer open={tripOpen} onClose={() => setTripOpen(false)} alerts={alerts} />
     </main>
+  );
+}
+
+export function Experience() {
+  return (
+    <TripProvider>
+      <ExperienceInner />
+    </TripProvider>
   );
 }
