@@ -41,7 +41,7 @@ export function App() {
           onOpenWhatsApp={() => setWaOpen(true)}
         />
         <Catalog alerts={alerts} />
-        <TripDrawer open={tripOpen} onClose={() => setTripOpen(false)} alerts={alerts} />
+        <TripDrawer open={tripOpen} onClose={() => setTripOpen(false)} onRequestOpen={() => setTripOpen(true)} alerts={alerts} />
         <WhatsAppPanel open={waOpen} onClose={() => setWaOpen(false)} alerts={alerts} defaultTownId={townId} />
         <FloatingTrip onClick={() => setTripOpen(true)} hidden={tripOpen || waOpen} />
       </TripProvider>

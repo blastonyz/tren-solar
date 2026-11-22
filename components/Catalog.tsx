@@ -11,44 +11,106 @@ import { useTrip } from "./trip";
 
 const KIND_LABEL = { comunidad: "Comunidad", cooperativa: "Cooperativa", emprendedor: "Emprendedor" } as const;
 
-/** Catálogo completo de ofertas regionales, debajo de la escena 3D. */
+/** Catálogo regional debajo de la escena 3D: buscador, categorías y resultados. Lo demás va plegado. */
 export function Catalog({ alerts }: { alerts: Alert[] }) {
   const { listings, providers, providerFilter, showProvider } = useCatalog();
   const [category, setCategory] = useState<Category | "all">("all");
   const [townId, setTownId] = useState<string>("all");
+  const [query, setQuery] = useState("");
 
-  const filtered = useMemo(
-    () =>
-      listings.filter(
-        (l) =>
-          (category === "all" || l.category === category) &&
-          (townId === "all" || l.townId === townId) &&
-          (!providerFilter || l.providerId === providerFilter),
-      ),
-    [listings, category, townId, providerFilter],
+  const needle = query.trim().toLowerCase();
+  const matchesQuery = (l: Listing) => {
+    if (!needle) return true;
+    const provider = providers.find((p) => p.id === l.providerId)?.name ?? "";
+    const town = TOWNS.find((t) => t.id === l.townId)?.name ?? "";
+    return `${l.title} ${l.summary} ${provider} ${town}`.toLowerCase().includes(needle);
+  };
+
+  const scoped = useMemo(
+    () => listings.filter((l) => (townId === "all" || l.townId === townId) && (!providerFilter || l.providerId === providerFilter) && matchesQuery(l)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [listings, townId, providerFilter, needle, providers],
   );
+  const filtered = useMemo(() => scoped.filter((l) => category === "all" || l.category === category), [scoped, category]);
+  const countFor = (id: Category) => scoped.filter((l) => l.category === id).length;
   const activeProvider = providers.find((p) => p.id === providerFilter);
+  const filtering = category !== "all" || townId !== "all" || needle !== "" || providerFilter !== null;
+  const clear = () => {
+    setCategory("all");
+    setTownId("all");
+    setQuery("");
+    showProvider(null);
+  };
 
   return (
     <section id="catalogo" className="relative z-10 bg-neutral-950 px-4 py-14 sm:px-8">
-      <div className="mx-auto max-w-6xl space-y-12">
+      <div className="mx-auto max-w-6xl space-y-8">
         <header>
           <p className="text-[11px] tracking-[0.35em] text-amber-100/70 uppercase">Ofertas de la Quebrada</p>
           <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">Todo lo regional en un solo lugar</h2>
-          <p className="mt-2 max-w-2xl text-sm text-white/65">
-            Excursiones, hospedajes, productos, gastronomía, cultura y transporte, de productores y comunidades locales. Los
-            oferentes pueden sumar lo suyo por WhatsApp.
-          </p>
+          <p className="mt-2 max-w-2xl text-sm text-white/65">Buscá por nombre, pueblo o productor, o elegí una categoría.</p>
         </header>
 
-        <div>
-          <h3 className="mb-3 text-sm font-medium text-white/80">Condiciones del día</h3>
-          <Conditions />
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar: quinoa, posada, Tilcara…"
+              aria-label="Buscar ofertas"
+              className="w-full rounded-full border border-white/20 bg-black/40 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-amber-200/70 focus:outline-none"
+            />
+            <select
+              value={townId}
+              onChange={(e) => setTownId(e.target.value)}
+              aria-label="Filtrar por pueblo"
+              className="rounded-full border border-white/20 bg-black/40 px-3 py-2 text-sm text-white sm:w-56"
+            >
+              <option value="all">Todos los pueblos</option>
+              {TOWNS.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <FilterChip active={category === "all"} onClick={() => setCategory("all")}>Todas · {scoped.length}</FilterChip>
+            {CATEGORIES.map((c) => (
+              <FilterChip key={c.id} active={category === c.id} onClick={() => setCategory(c.id)}>
+                {c.label} · {countFor(c.id)}
+              </FilterChip>
+            ))}
+            {filtering && (
+              <button onClick={clear} className="ml-1 text-xs text-amber-200 underline-offset-2 hover:underline">Limpiar</button>
+            )}
+          </div>
+          {activeProvider && (
+            <p className="text-xs text-white/70">
+              Solo lo de <span className="text-white">{activeProvider.name}</span>
+            </p>
+          )}
         </div>
 
-        <div>
-          <h3 className="mb-3 text-sm font-medium text-white/80">Productores y comunidades</h3>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {filtered.length === 0 ? (
+          <p className="rounded-2xl border border-white/10 p-6 text-sm text-white/60">No hay ofertas con esos filtros.</p>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((listing) => (
+              <OfferCard key={listing.id} listing={listing} alerts={alerts} />
+            ))}
+          </ul>
+        )}
+
+        <details className="group rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <summary className="cursor-pointer text-sm font-medium text-white/85">Condiciones del día por satélite</summary>
+          <div className="mt-4">
+            <Conditions />
+          </div>
+        </details>
+
+        <details className="group rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <summary className="cursor-pointer text-sm font-medium text-white/85">Productores y comunidades</summary>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {providers
               .map((provider) => ({ provider, own: listings.filter((l) => l.providerId === provider.id) }))
               .filter(({ own }) => own.length > 0)
@@ -66,51 +128,14 @@ export function Catalog({ alerts }: { alerts: Alert[] }) {
                       <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-white/70">{KIND_LABEL[provider.kind]}</span>
                     </div>
                     <p className="mt-1 text-xs text-white/55">{provider.story}</p>
-                    <p className="mt-2 text-[11px] text-amber-100/80">
-                      {own.length} {own.length === 1 ? "oferta" : "ofertas"}: {own.slice(0, 2).map((l) => l.title).join(" · ")}
-                      {own.length > 2 ? "…" : ""}
-                    </p>
+                    <p className="mt-2 text-[11px] text-amber-100/80">{own.length} {own.length === 1 ? "oferta" : "ofertas"}</p>
                   </button>
                 </li>
               ))}
           </ul>
-        </div>
+        </details>
 
-        <div>
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <FilterChip active={category === "all"} onClick={() => setCategory("all")}>Todas</FilterChip>
-            {CATEGORIES.map((c) => (
-              <FilterChip key={c.id} active={category === c.id} onClick={() => setCategory(c.id)}>{c.label}</FilterChip>
-            ))}
-            <select
-              value={townId}
-              onChange={(e) => setTownId(e.target.value)}
-              aria-label="Filtrar por pueblo"
-              className="ml-auto rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-xs text-white"
-            >
-              <option value="all">Todos los pueblos</option>
-              {TOWNS.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
-          {activeProvider && (
-            <p className="mb-4 text-xs text-white/70">
-              Mostrando solo lo de <span className="text-white">{activeProvider.name}</span>{" "}
-              <button onClick={() => showProvider(null)} className="text-amber-200 underline-offset-2 hover:underline">quitar filtro</button>
-            </p>
-          )}
-          {filtered.length === 0 ? (
-            <p className="rounded-2xl border border-white/10 p-6 text-sm text-white/60">No hay ofertas con esos filtros.</p>
-          ) : (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((listing) => (
-                <OfferCard key={listing.id} listing={listing} alerts={alerts} />
-              ))}
-            </ul>
-          )}
-          <p className="mt-6 text-[11px] text-white/40">Catálogo de ejemplo: los lugares son reales, los proveedores y precios son ficticios.</p>
-        </div>
+        <p className="text-[11px] text-white/40">Catálogo de ejemplo: los lugares son reales, los proveedores y precios son ficticios. Los oferentes pueden sumar lo suyo por WhatsApp.</p>
       </div>
     </section>
   );

@@ -239,6 +239,8 @@ Los umbrales son una propuesta para calibrar con los datos reales. La imagen sat
 4. El comprador paga con un usuario de prueba y vuelve por las `back_urls`.
 5. Mercado Pago avisa a `POST /api/mp/webhook`. La API consulta el pago, actualiza la orden y manda la confirmación por WhatsApp.
 
+**Estado:** `POST /api/checkout`, `GET /api/orders/:id`, `POST /api/orders/:id/simulate` y `POST /api/mp/webhook` están hechos, adaptados del bot de Leo (`leocagli/jujuy-pay`). Además de Mercado Pago aceptan tarjeta del exterior (Stripe, USD/EUR/BRL) y USDC en Stellar con memo y verificación en Horizon; la conversión usa el dólar MEP (`lib/fx.ts`). El precio sale siempre del catálogo del servidor. Sin claves el pago es de prueba (`live: false`). Las órdenes están en memoria y en serverless el estado se consulta al proveedor; pasan a Mongo con la tarea 18. Variables: `MP_ACCESS_TOKEN`, `STRIPE_SECRET_KEY`, `STELLAR_MERCHANT_ADDRESS` (ver `.env.example`).
+
 El link lo genera siempre la API a partir de la preferencia. El MCP oficial de Mercado Pago no crea links de pago: sirve para buscar documentación, crear usuarios de prueba y cargarles saldo, configurar webhooks y consultar el historial de notificaciones. Obtener las credenciales por MCP requiere OAuth.
 
 ### 7.2 Qué se hace con el MCP
