@@ -1,0 +1,56 @@
+{
+  "example": true,
+  "note": "EJEMPLO INVENTADO: estos focos no existen. Tienen el formato de filas del CSV de NASA FIRMS (VIIRS) y sirven para probar las reglas hasta tener FIRMS_MAP_KEY. `npm run fixtures` los reemplaza por una respuesta real.",
+  "savedAt": "2026-11-22T15:00:00.000Z",
+  "source": "VIIRS_SNPP_NRT",
+  "rows": [
+    {
+      "latitude": "-23.577",
+      "longitude": "-65.374",
+      "bright_ti4": "338.2",
+      "scan": "0.41",
+      "track": "0.37",
+      "acq_date": "2026-11-21",
+      "acq_time": "1806",
+      "satellite": "N",
+      "instrument": "VIIRS",
+      "confidence": "h",
+      "version": "2.0NRT",
+      "bright_ti5": "296.4",
+      "frp": "6.3",
+      "daynight": "D"
+    },
+    {
+      "latitude": "-23.300",
+      "longitude": "-65.420",
+      "bright_ti4": "331.7",
+      "scan": "0.39",
+      "track": "0.36",
+      "acq_date": "2026-11-21",
+      "acq_time": "1806",
+      "satellite": "N",
+      "instrument": "VIIRS",
+      "confidence": "n",
+      "version": "2.0NRT",
+      "bright_ti5": "294.9",
+      "frp": "2.1",
+      "daynight": "D"
+    },
+    {
+      "latitude": "-23.750",
+      "longitude": "-65.300",
+      "bright_ti4": "305.1",
+      "scan": "0.44",
+      "track": "0.38",
+      "acq_date": "2026-11-21",
+      "acq_time": "0612",
+      "satellite": "N",
+      "instrument": "VIIRS",
+      "confidence": "l",
+      "version": "2.0NRT",
+      "bright_ti5": "281.3",
+      "frp": "0.9",
+      "daynight": "N"
+    }
+  ]
+}

@@ -400,10 +400,10 @@ Ya no hay reparto por persona: es un solo listado y cualquiera (o cualquier agen
 
 | # | Tarea | Listo cuando | Estado |
 | --- | --- | --- | --- |
-| 5 | Traza GeoJSON del tren, pueblos y helpers geoespaciales (`lib/geo.ts`) | Función de distancia punto a traza probada | Pendiente |
-| 6 | `GET /api/telemetry` con datos simulados | Devuelve el JSON del contrato | Pendiente |
-| 7 | `GET /api/weather` (proxy de Open-Meteo con caché) y `GET /api/fires` (FIRMS con respaldo en fixture) | Ambos responden sin internet usando fixtures | Pendiente |
-| 8 | `GET /api/alerts`: motor de reglas de crecida, fuego y aglomeración | Genera al menos una alerta por regla con datos de ejemplo | Pendiente |
+| 5 | Traza GeoJSON del tren, pueblos y helpers geoespaciales (`lib/geo.ts`) | Función de distancia punto a traza probada | Hecha (`lib/geo.ts`, `lib/route.ts`, con tests) |
+| 6 | `GET /api/telemetry` con datos simulados | Devuelve el JSON del contrato | Hecha |
+| 7 | `GET /api/weather` (proxy de Open-Meteo con caché) y `GET /api/fires` (FIRMS con respaldo en fixture) | Ambos responden sin internet usando fixtures | Hecha; los focos salen del fixture de ejemplo hasta tener `FIRMS_MAP_KEY` (tarea 3) |
+| 8 | `GET /api/alerts`: motor de reglas de crecida, fuego y aglomeración | Genera al menos una alerta por regla con datos de ejemplo | Hecha; faltan las alertas tempranas (tarea 20) |
 | 9 | `POST /api/whatsapp` (webhook entrante de Vonage con validación de firma) y `POST /api/notify` | Un mensaje "alertas" devuelve la lista actual | Pendiente |
 | 18 | Capa de repositorio con `mongo` y `seed`, esquemas, índices y script `npm run seed` | La API funciona igual con `DATA_SOURCE=seed` y con `mongo` | Pendiente |
 | 19 | `GET /api/towns`, `GET /api/catalog` y `PUT /api/trips/[id]` | El front lista ítems por estación y categoría | Pendiente |
