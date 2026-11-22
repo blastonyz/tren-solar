@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Jujuy · Turismo y economías regionales",
+  title: "Jujuy Pay · Turismo y economías regionales",
   description:
     "Telemetría en vivo de la Quebrada de Humahuaca: ocupación, energía solar y economía local.",
 };

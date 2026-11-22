@@ -212,19 +212,20 @@ export function Experience({ telemetry, alerts, townId, onTownChange, onOpenTrip
       <Loader />
 
       {/* Velos para que el texto se lea sobre ambientes claros */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-44 bg-gradient-to-b from-black/60 to-transparent" />
-      <div aria-hidden className="pointer-events-none absolute top-0 left-0 z-[5] h-80 w-[44rem] max-w-full bg-[radial-gradient(ellipse_at_top_left,rgba(0,0,0,0.55),transparent_70%)]" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-44 bg-gradient-to-b from-black/70 to-transparent" />
+      <div aria-hidden className="pointer-events-none absolute top-0 left-0 z-[5] h-80 w-[44rem] max-w-full bg-[radial-gradient(ellipse_at_top_left,rgba(0,0,0,0.7),transparent_72%)]" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-48 bg-gradient-to-t from-black/50 to-transparent" />
 
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between gap-3 p-4 sm:p-8">
         <header className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] tracking-[0.35em] text-arena/70 uppercase">Quebrada de Humahuaca · Jujuy</p>
-            <h1 className={`mt-2 font-semibold tracking-tight transition-all ${started ? "text-3xl sm:text-4xl" : "text-4xl sm:text-6xl"}`}>
-              Tren Solar
+            <p className="text-[11px] tracking-[0.35em] text-arena uppercase [text-shadow:0_1px_6px_rgba(0,0,0,0.9)]">Quebrada de Humahuaca · Jujuy</p>
+            <h1 className={`mt-2 font-bold tracking-tight text-white transition-all [text-shadow:0_2px_4px_rgba(0,0,0,0.75),0_6px_28px_rgba(0,0,0,0.7)] ${started ? "text-3xl sm:text-4xl" : "text-5xl sm:text-7xl"}`}>
+              Jujuy <span className="text-solar">Pay</span>
             </h1>
+            <p className="mt-1 text-sm font-medium tracking-wide text-arena [text-shadow:0_1px_8px_rgba(0,0,0,0.9)]">en el Tren Solar de la Quebrada</p>
             {!started && (
-              <p className="mt-2 max-w-md text-sm text-white/70 sm:text-base">
+              <p className="mt-2 max-w-md text-sm text-white/90 [text-shadow:0_1px_8px_rgba(0,0,0,0.9)] sm:text-base">
                 Turismo y economías regionales del NOA, medidos en tiempo real.
               </p>
             )}
