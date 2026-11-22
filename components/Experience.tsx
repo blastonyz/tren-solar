@@ -23,23 +23,25 @@ const MODEL_URL = "/models/mesh.glb";
 const DRACO_DECODER = "/draco/";
 
 const SCENES = [
-  { id: "sunrise", label: "Amanecer", file: "/hdri/aarfontein_sunrise_2k.hdr" },
-  { id: "road", label: "Mediodía", file: "/hdri/aarfontein_dirt_road_2k.hdr" },
-  { id: "dusk", label: "Atardecer", file: "/hdri/aarfontein_dusk_2k.hdr" },
+  { id: "sunrise", label: "Amanecer", file: "/hdri/klippad_sunrise_2_2k.hdr" },
+  { id: "canyon", label: "Cañón", file: "/hdri/valley_of_desolation_2k.hdr" },
+  { id: "dusk", label: "Atardecer", file: "/hdri/toposcope_sunset_2k.hdr" },
   { id: "pan", label: "Salinas", file: "/hdri/aarfontein_pan_2k.hdr" },
 ] as const;
 
 /**
- * El GLB viene con el largo del tren en el eje Y y el techo en z=0 (hacia +Z arriba).
- * El grupo interior lo para (Z arriba -> Y arriba) y el exterior alinea el largo con X.
+ * El GLB ya tiene el techo en +Y y el largo en Z. El giro de -90° en X lo dejaba parado.
+ * El grupo exterior lo acuesta 90° sobre Z, con el techo hacia arriba y el largo en X.
  */
 function Train() {
   const { scene } = useGLTF(MODEL_URL, DRACO_DECODER, true);
   const scale = 14;
   return (
-    <group position={[0, 0.216 * scale, 0]} rotation={[0, Math.PI / 2, 0]} scale={scale}>
-      <group rotation={[-Math.PI / 2, 0, 0]}>
-        <primitive object={scene} />
+    <group rotation={[0, 0, -Math.PI / 2]}>
+      <group rotation={[0, Math.PI / 2, 0]} scale={scale}>
+        <group rotation={[-Math.PI / 2, 0, 0]}>
+          <primitive object={scene} />
+        </group>
       </group>
     </group>
   );
