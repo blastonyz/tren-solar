@@ -124,12 +124,14 @@ Se elige MongoDB porque el catálogo cambia de forma por categoría y los docume
 
 Atlas necesita internet y la Quebrada no la garantiza. Por eso la API accede a los datos a través de una capa de repositorio con dos implementaciones, elegidas con `DATA_SOURCE`:
 
-- `mongo`: MongoDB real (Atlas gratis o un `mongod` local en el equipo de quien muestra la demo).
+- `mongo`: MongoDB Atlas, con la conexión de `MONGO_DB_URI`. La base se llama `jujuy` y va en la propia URI, así que no hace falta otra variable para el nombre.
 - `seed`: lee `data/seed/*.json`, con la misma forma que los documentos, y guarda lo escrito en memoria.
 
 El front nunca sabe cuál se usa. Las semillas son la fuente única del catálogo: se cargan a Mongo con un script (`npm run seed`). La dependencia del driver (`mongodb`) va con versión exacta y se revisa con `npm audit`.
 
 ### 5.2 Colecciones
+
+Todas las colecciones viven en la base `jujuy`.
 
 | Colección | Para qué | Campos principales |
 | --- | --- | --- |
@@ -241,7 +243,7 @@ Las variables viven en `.env`, en la raíz del proyecto. Git ya ignora ese archi
 | `PASS_PHRASE` | Frase que cada teléfono manda al número del Sandbox para autorizarse | Panel de suscripción (tarea 12) y pitch | Cargada |
 | `FIRMS_MAP_KEY` | Clave de NASA FIRMS | `GET /api/fires` | Pendiente (tarea 3); sin ella se usa el fixture |
 | `DATA_SOURCE` | `mongo` o `seed`: de dónde lee la API el catálogo y las órdenes | Capa de repositorio | A definir (ver [Conectividad](#51-conectividad)) |
-| `MONGODB_URI` y `MONGODB_DB` | Conexión a MongoDB (Atlas o local) | Capa de repositorio | Pendiente (tarea 15) |
+| `MONGO_DB_URI` | Conexión a MongoDB Atlas. Incluye usuario, clave y la base `jujuy` | Capa de repositorio | Cargada |
 | `MP_ACCESS_TOKEN` | Token de acceso de prueba de Mercado Pago | `POST /api/checkout` y `POST /api/mp/webhook` | Pendiente (tarea 16) |
 | `NEXT_PUBLIC_MP_PUBLIC_KEY` | Clave pública de prueba de Mercado Pago (puede ir al navegador) | Front | Pendiente (tarea 16) |
 | `APP_BASE_URL` | URL pública de la app (túnel o deploy), para `back_urls` y `notification_url` | `POST /api/checkout` | Pendiente |
@@ -256,8 +258,7 @@ VONAGE_API_KEY=
 PASS_PHRASE=
 FIRMS_MAP_KEY=
 DATA_SOURCE=seed
-MONGODB_URI=
-MONGODB_DB=jujuy
+MONGO_DB_URI=
 MP_ACCESS_TOKEN=
 NEXT_PUBLIC_MP_PUBLIC_KEY=
 APP_BASE_URL=
@@ -266,7 +267,7 @@ APP_BASE_URL=
 ### 8.3 Reglas de uso
 
 - `MASTER_KEY` y `VONAGE_API_KEY` se leen solo en el servidor (rutas de `app/api`). Nunca llevan el prefijo `NEXT_PUBLIC_` ni llegan al navegador.
-- `MONGODB_URI` y `MP_ACCESS_TOKEN` se leen solo en el servidor. Lo único con prefijo `NEXT_PUBLIC_` es la clave pública de Mercado Pago.
+- `MONGO_DB_URI` y `MP_ACCESS_TOKEN` se leen solo en el servidor. Lo único con prefijo `NEXT_PUBLIC_` es la clave pública de Mercado Pago.
 - `PASS_PHRASE` es el único valor secreto que se muestra en pantalla, junto al QR del Sandbox.
 - El número del Sandbox y las URLs de los webhooks entrante y de estado se cargan en el panel de Vonage, no en `.env`.
 
@@ -389,7 +390,7 @@ Ya no hay reparto por persona: es un solo listado y cualquiera (o cualquier agen
 | 1 | Congelar alcance, tipos compartidos y contrato de rutas (este doc) | El equipo aprobó los tipos | Pendiente |
 | 2 | Activar el Sandbox de Vonage, autorizar los teléfonos del equipo con `PASS_PHRASE` y armar el QR/enlace de WhatsApp al número del Sandbox | Un teléfono de prueba recibe respuesta | Pendiente |
 | 3 | Pedir la MAP_KEY de FIRMS | La clave responde un `area` de prueba | Pendiente |
-| 15 | Decidir Atlas o MongoDB local y crear la base con su `MONGODB_URI` | La API conecta y `npm run seed` carga el catálogo | Pendiente |
+| 15 | Conectar la API a la base `jujuy` de Atlas con `MONGO_DB_URI` | La API conecta y `npm run seed` carga el catálogo | En curso: la URI ya está en `.env`; falta probar la conexión y cargar el catálogo |
 | 16 | Crear la aplicación de Mercado Pago y los usuarios de prueba (vendedor y comprador con saldo), con el MCP o el panel | Un pago de prueba se aprueba con el usuario comprador | Pendiente |
 | 17 | Cargar el catálogo ficticio realista (unos 6 ítems por pueblo y categoría) en `data/seed/` | Cada estación tiene ítems en las 6 categorías | Pendiente |
 | 4 | Guion del pitch y demo de 3 minutos, con el mensaje de impacto en turismo y economías regionales | Ensayo cronometrado | Pendiente |
@@ -458,7 +459,6 @@ El camino crítico es contrato, API con fixtures, front sobre la API y recién d
 
 - Cuál de `MASTER_KEY` y `VONAGE_API_KEY` es la clave de API y cuál el secreto (ver [Variables](#81-variables)).
 - Con qué secreto se valida la firma del webhook. Si Vonage usa un secreto de firma distinto de las credenciales de la cuenta, hace falta una variable más.
-- Atlas gratis o MongoDB local para la demo.
 - De quién es la cuenta de Mercado Pago de prueba y quién la administra.
 - Si mostramos `communityShare` como dato real (acuerdo con comunidades) o como ejemplo en la demo.
 - Quién es el dueño del repo `jujuy-pay` para aprobar el PR.
