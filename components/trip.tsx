@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { LISTINGS_BY_ID } from "@/data/catalog";
+import { useCatalog } from "./catalog-context";
 import type { TripItem } from "@/lib/types";
 
 interface TripApi {
@@ -20,6 +20,7 @@ interface TripApi {
 const TripContext = createContext<TripApi | null>(null);
 
 export function TripProvider({ children }: { children: ReactNode }) {
+  const { byId } = useCatalog();
   const [items, setItems] = useState<TripItem[]>([]);
 
   const add = useCallback((listingId: string) => {
@@ -43,7 +44,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     let totalArs = 0;
     let communityArs = 0;
     for (const item of items) {
-      const listing = LISTINGS_BY_ID.get(item.listingId);
+      const listing = byId.get(item.listingId);
       if (!listing) continue;
       const subtotal = listing.priceArs * item.qty;
       totalArs += subtotal;
@@ -60,7 +61,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
       remove,
       clear,
     };
-  }, [items, add, setQty, remove, clear]);
+  }, [items, byId, add, setQty, remove, clear]);
 
   return <TripContext.Provider value={value}>{children}</TripContext.Provider>;
 }

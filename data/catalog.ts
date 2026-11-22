@@ -25,6 +25,7 @@ export const CATEGORIES: Array<{ id: Category; label: string; hint: string }> = 
 export const PROVIDERS: Provider[] = [
   { id: "tren-solar", name: "Tren Solar de la Quebrada", kind: "cooperativa", story: "Servicio ferroviario alimentado con paneles solares que une los pueblos de la Quebrada." },
   { id: "coop-volcan", name: "Cooperativa Valle Verde", kind: "cooperativa", story: "Productores de Volcán y Tumbaya que venden quinoa y comida regional sin intermediarios." },
+  { id: "guias-volcan", name: "Guías de Volcán", kind: "comunidad", story: "Vecinos de Volcán que guían por los cerros y quebradas que conocen desde chicos." },
   { id: "flia-algarrobos", name: "Familia Los Algarrobos", kind: "comunidad", story: "Tres generaciones recibiendo viajeros en su casa de adobe." },
   { id: "guias-colores", name: "Guías Colores del Cerro", kind: "cooperativa", story: "Guías de Purmamarca que cuidan los senderos del Cerro de los Siete Colores." },
   { id: "posada-cerro", name: "Posada del Cerro", kind: "emprendedor", story: "Posada familiar con vista al cerro, atendida por sus dueños." },
@@ -76,6 +77,10 @@ export const LISTINGS: Listing[] = [
   item("pr-volcan-quinoa", "product", "volcan", "coop-volcan", "Quinoa real en origen", "Bolsa de un kilo de productores de Volcán y Tumbaya.", 6000, "kilo", 0.8, { artisan: "Cooperativa Valle Verde", shipping: "Retiro en la estación" }),
   item("lo-volcan-algarrobos", "lodging", "volcan", "flia-algarrobos", "Casa de familia Los Algarrobos", "Habitación doble con desayuno de la huerta.", 38000, "noche", 0.9, { beds: 2, checkIn: "14 h", amenities: "Desayuno, agua caliente" }),
 
+  item("ex-volcan-quebrada", "excursion", "volcan", "guias-volcan", "Caminata a la Quebrada de Volcán", "Sendero por la quebrada con guía local y vista al valle.", 11000, "persona", 0.9, { durationMin: 150, difficulty: "Baja", outdoor: true, requiresGuide: true }),
+  item("ex-volcan-mirador", "excursion", "volcan", "guias-volcan", "Mirador de los cerros al atardecer", "Subida corta para ver el valle teñirse de colores.", 7000, "persona", 0.9, { durationMin: 90, difficulty: "Baja", outdoor: true, requiresGuide: false }),
+  item("cu-volcan-huerta", "culture", "volcan", "coop-volcan", "Huerta comunitaria y feria de productores", "Recorrido por las huertas con quienes cultivan y venden en la feria.", 5000, "persona", 0.9, { eventDate: "Sábados", language: "Español", communityLed: true }),
+
   // Purmamarca
   item("ex-purma-siete", "excursion", "purmamarca", "guias-colores", "Cerro de los Siete Colores al amanecer", "Caminata corta con guía local por el sendero del cerro.", 12000, "persona", 0.9, { durationMin: 90, difficulty: "Baja", outdoor: true, requiresGuide: true }),
   item("ex-purma-colorados", "excursion", "purmamarca", "guias-colores", "Paseo de los Colorados", "Circuito de tres kilómetros entre quebradas rojas.", 15000, "persona", 0.9, { durationMin: 150, difficulty: "Media", outdoor: true, requiresGuide: true }),
@@ -117,6 +122,10 @@ export const LISTINGS: Listing[] = [
   item("pr-huma-tejidos", "product", "humahuaca", "mujeres-humahuaca", "Tejidos de la cooperativa de mujeres", "Chalinas y mantas hechas con lana de oveja y llama.", 30000, "pieza", 0.9, { artisan: "Cooperativa de Mujeres Tejedoras", material: "Lana", shipping: "Envío a todo el país" }),
   item("tr-huma-volcan", "transport", "humahuaca", "tren-solar", "Tren Solar: Humahuaca a Volcán", "Tramo de regreso con vistas de la quebrada.", 9500, "persona", 0.4, { from: "Humahuaca", to: "Volcán", departures: "11:00, 15:00 y 19:00" }),
 ];
+
+/** Ofertas que, en el modelo final, llegaron por el bot de WhatsApp (ejemplos para la demo). */
+const FROM_WHATSAPP = new Set(["pr-uquia-hierbas", "fd-maimara-dulces", "pr-volcan-quinoa"]);
+for (const listing of LISTINGS) if (FROM_WHATSAPP.has(listing.id)) listing.extra.source = "whatsapp";
 
 export const LISTINGS_BY_ID = new Map(LISTINGS.map((l) => [l.id, l]));
 

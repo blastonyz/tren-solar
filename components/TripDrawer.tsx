@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LISTINGS_BY_ID, formatArs } from "@/data/catalog";
+import { formatArs } from "@/data/catalog";
 import { TOWNS } from "@/lib/route";
 import type { Alert } from "@/lib/types";
+import { useCatalog } from "./catalog-context";
 import { useTrip } from "./trip";
 
 type Step = "review" | "paying" | "done";
@@ -17,6 +18,7 @@ interface Props {
 /** "Mi viaje": itinerario por estación, total y pago. El pago es simulado hasta conectar /api/checkout. */
 export function TripDrawer({ open, onClose, alerts }: Props) {
   const trip = useTrip();
+  const { byId } = useCatalog();
   const [step, setStep] = useState<Step>("review");
   const [orderCode, setOrderCode] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -26,7 +28,7 @@ export function TripDrawer({ open, onClose, alerts }: Props) {
   }, []);
 
   const lines = trip.items.flatMap((item) => {
-    const listing = LISTINGS_BY_ID.get(item.listingId);
+    const listing = byId.get(item.listingId);
     return listing ? [{ item, listing }] : [];
   });
   const townIds = TOWNS.filter((t) => lines.some((l) => l.listing.townId === t.id)).map((t) => t.id);
@@ -46,7 +48,7 @@ export function TripDrawer({ open, onClose, alerts }: Props) {
 
   return (
     <div
-      className={`pointer-events-none absolute inset-y-0 right-0 z-30 flex w-full max-w-md transition-transform duration-300 ${open ? "translate-x-0" : "invisible translate-x-full"}`}
+      className={`pointer-events-none fixed inset-y-0 right-0 z-50 flex w-full max-w-md transition-transform duration-300 ${open ? "translate-x-0" : "invisible translate-x-full"}`}
       aria-hidden={!open}
     >
       <aside className="pointer-events-auto m-3 flex w-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/75 backdrop-blur-xl">

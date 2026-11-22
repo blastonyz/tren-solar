@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Alert, Telemetry } from "@/lib/types";
+import type { Alert, FiresResponse, Telemetry, WeatherResponse } from "@/lib/types";
 
 /** Consulta una ruta de la API cada tanto. Si falla, conserva el último dato recibido. */
 function usePolling<T>(url: string, everyMs: number): T | null {
@@ -30,3 +30,5 @@ function usePolling<T>(url: string, everyMs: number): T | null {
 
 export const useTelemetry = () => usePolling<Telemetry>("/api/telemetry", 4000);
 export const useAlerts = () => usePolling<Alert[]>("/api/alerts", 30000);
+export const useWeather = () => usePolling<WeatherResponse>("/api/weather", 5 * 60_000);
+export const useFires = () => usePolling<FiresResponse>("/api/fires", 5 * 60_000);

@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CATEGORIES, categoriesWithItems, formatArs, listingsFor, providerOf } from "@/data/catalog";
+import { CATEGORIES, formatArs } from "@/data/catalog";
 import { TOWNS } from "@/lib/route";
 import type { Alert, Category, Listing, Telemetry } from "@/lib/types";
 import { SUITABILITY_LABEL, SUITABILITY_STYLE, suitabilityFor } from "./suitability";
+import { useCatalog } from "./catalog-context";
 import { useTrip } from "./trip";
 
 const EXTRA_LABELS: Record<string, string> = {
@@ -48,7 +49,11 @@ interface Props {
 
 export function StationPanel({ townId, alerts, telemetry, onClose }: Props) {
   const town = TOWNS.find((t) => t.id === townId);
-  const categories = useMemo(() => categoriesWithItems(townId), [townId]);
+  const { listings: all } = useCatalog();
+  const categories = useMemo(
+    () => CATEGORIES.filter((c) => all.some((l) => l.townId === townId && l.category === c.id)).map((c) => c.id),
+    [all, townId],
+  );
   const [chosen, setChosen] = useState<Category | null>(null);
   // Si la categoría elegida no existe en este pueblo, se muestra la primera disponible.
   const category = chosen && categories.includes(chosen) ? chosen : categories[0];
@@ -57,7 +62,7 @@ export function StationPanel({ townId, alerts, telemetry, onClose }: Props) {
   if (!town) return null;
   const townAlerts = alerts.filter((a) => a.townId === townId);
   const occupancy = telemetry?.towns.find((t) => t.townId === townId)?.occupancyPct;
-  const listings = category ? listingsFor(townId, category) : [];
+  const listings = category ? all.filter((l) => l.townId === townId && l.category === category) : [];
 
   return (
     <aside className="pointer-events-auto flex max-h-full w-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/55 backdrop-blur-md">
@@ -124,8 +129,9 @@ export function StationPanel({ townId, alerts, telemetry, onClose }: Props) {
 
 function ListingCard({ listing, alerts, open, onToggle }: { listing: Listing; alerts: Alert[]; open: boolean; onToggle: () => void }) {
   const trip = useTrip();
+  const { providers, showProvider } = useCatalog();
   const suitability = suitabilityFor(listing, alerts);
-  const provider = providerOf(listing.providerId);
+  const provider = providers.find((p) => p.id === listing.providerId);
   const added = trip.has(listing.id);
   const extras = Object.entries(listing.extra).filter(([key]) => key in EXTRA_LABELS);
 
@@ -155,7 +161,10 @@ function ListingCard({ listing, alerts, open, onToggle }: { listing: Listing; al
           {suitability && <p className="text-white/55">Hoy: {suitability.reason}</p>}
           {provider && (
             <p>
-              <span className="text-white/90">{provider.name}</span> · {provider.kind}. {provider.story}
+              <span className="text-white/90">{provider.name}</span> · {provider.kind}. {provider.story}{" "}
+              <button onClick={() => showProvider(provider.id)} className="text-amber-200 underline-offset-2 hover:underline">
+                Ver todo lo de este productor
+              </button>
             </p>
           )}
           {extras.length > 0 && (

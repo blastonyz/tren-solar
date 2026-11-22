@@ -11,12 +11,11 @@ import {
 } from "@react-three/drei";
 import { ShaderChunk, Vector3, type Vector3Tuple } from "three";
 import { TOWNS } from "@/lib/route";
+import type { Alert, Telemetry } from "@/lib/types";
 import { Hud } from "./Hud";
 import { RouteBar } from "./RouteBar";
 import { StationPanel } from "./StationPanel";
-import { TripDrawer } from "./TripDrawer";
-import { TripProvider, useTrip } from "./trip";
-import { useAlerts, useTelemetry } from "./live";
+import { useTrip } from "./trip";
 
 // three r181+ eliminó este chunk. El suelo proyectado de drei igual lo incluye,
 // y el include que no resuelve tira en cada frame.
@@ -160,13 +159,18 @@ function TripButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function ExperienceInner() {
+interface ExperienceProps {
+  telemetry: Telemetry | null;
+  alerts: Alert[];
+  townId: string | null;
+  onTownChange: (townId: string | null) => void;
+  onOpenTrip: () => void;
+  onOpenWhatsApp: () => void;
+}
+
+export function Experience({ telemetry, alerts, townId, onTownChange, onOpenTrip, onOpenWhatsApp }: ExperienceProps) {
   const [sceneId, setSceneId] = useState<SceneId>("sunrise");
   const [started, setStarted] = useState(false);
-  const [townId, setTownId] = useState<string | null>(null);
-  const [tripOpen, setTripOpen] = useState(false);
-  const telemetry = useTelemetry();
-  const alerts = useAlerts() ?? [];
 
   const current = SCENES.find((s) => s.id === sceneId) ?? SCENES[0];
   const goal = useMemo(() => {
@@ -175,13 +179,13 @@ function ExperienceInner() {
   }, [townId]);
 
   const selectTown = (id: string) => {
-    setTownId(id);
+    onTownChange(id);
     setSceneId(STATION_SCENE[id] ?? "sunrise");
   };
   const topAlert = alerts[0];
 
   return (
-    <main className="relative h-full w-full overflow-hidden">
+    <main className="relative h-svh w-full overflow-hidden">
       <Canvas className="absolute inset-0" camera={{ position: HOME_GOAL.position, fov: 38 }} dpr={[1, 1.5]}>
         <Suspense fallback={null}>
           <Environment key={current.id} files={current.file} background ground={{ height: 5, radius: 90, scale: 90 }} />
@@ -195,6 +199,7 @@ function ExperienceInner() {
           makeDefault
           target={HOME_GOAL.target}
           enablePan={false}
+          enableZoom={false}
           autoRotate={!townId}
           autoRotateSpeed={0.45}
           minDistance={9}
@@ -228,12 +233,22 @@ function ExperienceInner() {
               </p>
             )}
           </div>
-          {started && <TripButton onClick={() => setTripOpen(true)} />}
+          {started && (
+            <div className="flex gap-2">
+              <button
+                onClick={onOpenWhatsApp}
+                className="pointer-events-auto rounded-full border border-white/25 bg-black/30 px-4 py-2 text-sm text-white/85 backdrop-blur transition hover:border-white/50"
+              >
+                Avisos
+              </button>
+              <TripButton onClick={onOpenTrip} />
+            </div>
+          )}
         </header>
 
         {started && townId && (
           <div className="pointer-events-none absolute top-24 right-4 bottom-44 flex w-[calc(100%-2rem)] max-w-md sm:top-28 sm:right-8 sm:bottom-48">
-            <StationPanel key={townId} townId={townId} alerts={alerts} telemetry={telemetry} onClose={() => setTownId(null)} />
+            <StationPanel key={townId} townId={townId} alerts={alerts} telemetry={telemetry} onClose={() => onTownChange(null)} />
           </div>
         )}
 
@@ -269,19 +284,16 @@ function ExperienceInner() {
               </div>
             )}
           </div>
+          <a
+            href="#catalogo"
+            className="pointer-events-auto self-center rounded-full border border-white/25 bg-black/35 px-4 py-1.5 text-xs text-white/85 backdrop-blur transition hover:border-white/50"
+          >
+            Ver todas las ofertas ↓
+          </a>
           {started && <RouteBar selectedId={townId} onSelect={selectTown} telemetry={telemetry} alerts={alerts} />}
         </div>
       </div>
 
-      <TripDrawer open={tripOpen} onClose={() => setTripOpen(false)} alerts={alerts} />
     </main>
-  );
-}
-
-export function Experience() {
-  return (
-    <TripProvider>
-      <ExperienceInner />
-    </TripProvider>
   );
 }

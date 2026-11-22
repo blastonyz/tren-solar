@@ -34,6 +34,7 @@ El MVP es una experiencia de turismo y economías regionales sobre el recorrido 
 | Caudal de ríos (crecidas) | Open-Meteo Flood API (GloFAS) | Real; sin clave, archivo de ejemplo |
 | Catálogo (excursiones, hospedajes, productos, etc.) | MongoDB; semillas en `data/seed/` | Ficticio pero realista, cargado por nosotros |
 | Pagos | Mercado Pago, entorno de prueba | Real en sandbox, sin dinero real |
+| Bot de WhatsApp para turistas y oferentes | DeepSeek (API de chat) sobre el Sandbox de Vonage | Real; ver [Canal de WhatsApp](#43-canal-de-whatsapp-turistas-y-oferentes) |
 
 ### 1.2 Fuera de alcance
 
@@ -116,6 +117,30 @@ El 3D siempre queda de fondo; las pantallas son paneles que se deslizan encima.
 
 Animaciones previstas: vuelo de cámara a cada estación, tren que avanza y frena entre paradas, cambio de escena HDRI según la hora del viaje y ocupación del HUD que se mueve.
 
+### 4.3 Canal de WhatsApp: turistas y oferentes
+
+La idea es centralizar las ofertas regionales en un solo canal de WhatsApp. El bot pregunta primero si la persona es turista o local y sigue por uno de dos caminos. Un modelo de lenguaje (DeepSeek) entiende los mensajes libres, pero **nunca ejecuta acciones**: el servidor valida lo que devuelve y es el único que escribe en la base.
+
+| Paso | Turista | Local (oferente) |
+| --- | --- | --- |
+| 1 | "¿Sos turista o local?" (se interpreta texto libre) | Igual |
+| 2 | Pregunta pueblo, fechas e intereses | "¿Qué servicios o productos ofrecés?" |
+| 3 | Elige hasta tres ítems del catálogo según filtros y aptitud del día, y los redacta | Extrae un borrador (categoría, título, resumen, precio, unidad, pueblo, productor) |
+| 4 | Suma las alertas vigentes del pueblo | Pregunta de a uno los datos que faltan (máximo tres vueltas) |
+| 5 | Ofrece sumar al viaje o pagar | Muestra el resumen y pide confirmación ("¿Publico? sí o no") |
+| 6 | | Si confirma, publica solo y responde con el código de la oferta |
+
+Reglas del canal:
+
+- Al turista el bot solo le muestra ítems que existen en el catálogo. El modelo redacta la respuesta pero no inventa lugares ni precios.
+- La publicación es automática una vez que el oferente confirma, sin revisión humana previa. A cambio, el servidor valida el borrador con un esquema (categoría permitida, precio dentro de un rango, largo del texto, pueblo conocido), filtra términos prohibidos, limita a 3 publicaciones por teléfono y por día, y marca la oferta con `source: "whatsapp"`.
+- El oferente gestiona lo suyo por mensaje: `mis ofertas`, `pausar <código>` y `borrar <código>`. Cualquier usuario puede escribir `reportar <código>` y la oferta queda oculta hasta que alguien la revise.
+- Una oferta publicada por WhatsApp se vincula a un productor (`providers`) creado a partir del teléfono, así los productos de una misma persona o cooperativa quedan agrupados.
+- Los mensajes de los usuarios son datos, no instrucciones: el prompt del sistema los trata como texto a analizar y el servidor ignora cualquier orden que el modelo devuelva fuera del esquema.
+- Los comandos fijos (`alertas`, `suscribir`, `baja`) siguen funcionando sin pasar por el modelo.
+
+Detalles de la API de DeepSeek, según su documentación: se usa `POST https://api.deepseek.com/chat/completions` con `Authorization: Bearer <DEEPSEEK_API_KEY>`. Para el borrador se activa la salida JSON con `response_format: { "type": "json_object" }`; el prompt debe pedir JSON de forma explícita y dar un ejemplo, hay que fijar `max_tokens` para que no se corte, y la API puede devolver contenido vacío, así que el servidor reintenta una vez y, si falla, pide el dato de nuevo al usuario. El nombre del modelo cambia con el tiempo: va en `DEEPSEEK_MODEL` y se confirma en la documentación vigente antes de implementar.
+
 ## 5. Modelo de datos (MongoDB)
 
 Se elige MongoDB porque el catálogo cambia de forma por categoría y los documentos se cargan fácil como JSON; las consultas geográficas se resuelven con índices `2dsphere`.
@@ -137,11 +162,13 @@ Todas las colecciones viven en la base `jujuy`.
 | --- | --- | --- |
 | `towns` | Estaciones y pueblos | `_id` (slug), `name`, `location` (GeoJSON Point), `capacity`, `kmFromStart` |
 | `providers` | Quién ofrece el servicio | `_id`, `name`, `kind` (`comunidad`, `cooperativa`, `emprendedor`), `townId`, `story`, `whatsapp` |
-| `listings` | Catálogo de todas las categorías | `_id`, `category`, `townId`, `providerId`, `title`, `summary`, `images[]`, `priceArs`, `priceUnit`, `communityShare` (0 a 1), `location`, `tags[]`, `active`, `extra{}` |
+| `listings` | Catálogo de todas las categorías | `_id`, `category`, `townId`, `providerId`, `title`, `summary`, `images[]`, `priceArs`, `priceUnit`, `communityShare` (0 a 1), `location`, `tags[]`, `active`, `status` (`published`, `paused`, `hidden`), `source` (`seed`, `whatsapp`), `ownerHash`, `createdAt`, `extra{}` |
 | `trips` | "Mi viaje" antes de pagar | `_id`, `sessionId`, `items[{listingId, qty, date, priceArsAtAdd}]`, `status` (`draft`, `ordered`) |
 | `orders` | Cobro de un viaje | `_id`, `tripId`, `items[]` (copia de precios), `totalArs`, `status` (`pending`, `approved`, `rejected`, `refunded`), `mp{preferenceId, paymentId, status}`, `createdAt` |
 | `subscriptions` | Avisos por WhatsApp | `_id`, `phone` (E.164), `townId`, `optedIn`, `createdAt` |
 | `alerts` | Alertas emitidas y su historial | `_id`, `kind`, `severity`, `townId`, `message`, `location`, `leadTimeHours`, `issuedAt`, `expiresAt`, `source`, `dedupeKey` |
+| `conversations` | Estado del bot por teléfono | `_id` (hash del teléfono), `role` (`tourist`, `local`), `step`, `draft`, `turns`, `updatedAt` (con TTL) |
+| `reports` | Reportes de ofertas | `_id`, `listingId`, `reason`, `createdAt` |
 | `signals_cache` | Respuestas de Open-Meteo, Flood y FIRMS | `_id` (clave), `payload`, `fetchedAt`, `expireAt` |
 
 ### 5.3 Índices
@@ -249,6 +276,8 @@ Las variables viven en `.env`, en la raíz del proyecto. Git ya ignora ese archi
 | `APP_BASE_URL` | URL pública de la app (túnel o deploy), para `back_urls` y `notification_url` | `POST /api/checkout` | Pendiente |
 | `VONAGE_SIGNATURE_SECRET` | Secreto de firma de la cuenta Vonage (Settings del panel), distinto del secreto de API. Valida el JWT de los webhooks | `POST /api/whatsapp` | Pendiente; sin él la firma no se valida en desarrollo y en producción el webhook responde 503 |
 | `VONAGE_WHATSAPP_NUMBER` | Número del Sandbox que envía los avisos | `POST /api/notify` | Opcional; por defecto `14157386102` |
+| `DEEPSEEK_API_KEY` | Clave de la API de DeepSeek | Bot de WhatsApp (solo servidor) | Pendiente |
+| `DEEPSEEK_MODEL` | Nombre del modelo a usar (cambia con el tiempo) | Bot de WhatsApp | Pendiente |
 | `NOTIFY_TOKEN` | Si está, `POST /api/notify` pide `Authorization: Bearer <NOTIFY_TOKEN>` | `POST /api/notify` | Opcional |
 
 Por el largo de los valores cargados (8 y 16 caracteres, el formato de la clave y el secreto de Vonage), `MASTER_KEY` es la clave de API de la cuenta (el usuario de Basic) y `VONAGE_API_KEY` su secreto (la contraseña). Así lo usa `lib/vonage.ts`. Sin las dos, los envíos se simulan y solo se escriben en el log del servidor.
@@ -267,6 +296,8 @@ NEXT_PUBLIC_MP_PUBLIC_KEY=
 APP_BASE_URL=
 VONAGE_SIGNATURE_SECRET=
 VONAGE_WHATSAPP_NUMBER=
+DEEPSEEK_API_KEY=
+DEEPSEEK_MODEL=
 NOTIFY_TOKEN=
 ```
 
@@ -348,6 +379,8 @@ interface Order {
 | `POST /api/subscribe` | Registra número de WhatsApp y pueblo |
 | `POST /api/notify` | Envía una alerta a los suscriptos del pueblo por Vonage |
 | `POST /api/whatsapp` | Webhook de Vonage: lee el comando recibido y responde con la API de mensajes |
+| `GET /api/providers` y `GET /api/providers/[id]` | Productores y comunidades con sus ofertas publicadas |
+| `GET /api/conditions?town=` | Condiciones del día por pueblo (lluvia, ráfagas, focos de calor, caudal) con su origen (`live` o `fixture`) |
 | `GET /api/towns` | Estaciones con ocupación y alertas vigentes |
 | `GET /api/catalog?town=&category=` | `Listing[]` con `suitability` calculada para las excursiones al aire libre |
 | `GET /api/catalog/[id]` | Un ítem con su proveedor |
@@ -413,6 +446,10 @@ Ya no hay reparto por persona: es un solo listado y cualquiera (o cualquier agen
 | 7 | `GET /api/weather` (proxy de Open-Meteo con caché) y `GET /api/fires` (FIRMS con respaldo en fixture) | Ambos responden sin internet usando fixtures | Hecha; los focos salen del fixture de ejemplo hasta tener `FIRMS_MAP_KEY` (tarea 3) |
 | 8 | `GET /api/alerts`: motor de reglas de crecida, fuego y aglomeración | Genera al menos una alerta por regla con datos de ejemplo | Hecha; faltan las alertas tempranas (tarea 20) |
 | 9 | `POST /api/whatsapp` (webhook entrante de Vonage con validación de firma) y `POST /api/notify` | Un mensaje "alertas" devuelve la lista actual | Hecha (`lib/vonage.ts`, `lib/whatsapp.ts`, `lib/notify.ts`, con tests). También `POST /api/subscribe`. Las suscripciones viven en memoria hasta la tarea 18. Falta probarlo con un teléfono real (tarea 2) y cargar `VONAGE_SIGNATURE_SECRET` |
+| 26 | Máquina de estados del bot (`conversations`): turista o local, turnos y comandos fijos sin modelo | Una conversación de prueba recorre los dos caminos | Pendiente |
+| 27 | Cliente de DeepSeek con salida JSON, validación con esquema, reintento y respaldo si falla | Un texto libre devuelve un borrador válido o una pregunta de repuesto | Pendiente |
+| 28 | Publicación automática con límites, filtro de términos, `mis ofertas`, `pausar`, `borrar` y `reportar` | Una oferta confirmada por WhatsApp aparece en `GET /api/catalog` | Pendiente |
+| 29 | `GET /api/providers` y `GET /api/conditions` | El front muestra productores y condiciones del día con datos reales o de ejemplo | Pendiente |
 | 18 | Capa de repositorio con `mongo` y `seed`, esquemas, índices y script `npm run seed` | La API funciona igual con `DATA_SOURCE=seed` y con `mongo` | Pendiente |
 | 19 | `GET /api/towns`, `GET /api/catalog` y `PUT /api/trips/[id]` | El front lista ítems por estación y categoría | Pendiente |
 | 20 | Caudal (Open-Meteo Flood), alertas tempranas con `dedupeKey` y cálculo de `suitability` | Una excursión cambia de verde a rojo con un fixture de lluvia o de foco de calor | Pendiente |
@@ -430,6 +467,9 @@ Ya no hay reparto por persona: es un solo listado y cualquiera (o cualquier agen
 | 23 | Panel de estación con pestañas por categoría, chips de alerta y de aptitud, y detalle de ítem | Se ven las 6 categorías con datos del catálogo | Pendiente |
 | 24 | "Mi viaje", pantalla de pago y confirmación (con botón "simular pago") | De sumar un ítem a ver la orden aprobada sin salir de la app | Pendiente |
 | 25 | Animación de recorrido con las paradas elegidas y cambio de escena HDRI según la hora | El tren recorre el itinerario armado | Pendiente |
+| 30 | Catálogo con tarjetas por categoría debajo del canvas, filtros por pueblo y productor, y productores vinculados a sus productos | Se navega todo el catálogo sin abrir el panel 3D | En curso |
+| 31 | Indicadores de condiciones del día por pueblo (clima y satélite) con su origen visible | Cada pueblo muestra lluvia, ráfagas y focos de calor cercanos | En curso |
+| 32 | Chat de prueba del bot que publica una oferta en el catálogo (simulado) | Una oferta "publicada por WhatsApp" aparece en el catálogo | En curso |
 
 ### 10.4 Reglas de repo
 
@@ -457,6 +497,9 @@ El camino crítico es contrato, API con fixtures, front sobre la API y recién d
 | Vonage no puede llamar a `localhost` | Exponer el webhook con un túnel (ngrok o cloudflared) o usar el botón "simular mensaje" |
 | Cada tester debe autorizarse en el Sandbox | QR y `PASS_PHRASE` en pantalla y en el pitch; probar antes con los tres teléfonos del equipo |
 | La MAP_KEY de FIRMS tarda o falla | Usar el fixture de focos de calor y avisar en la demo que es un ejemplo |
+| Un usuario manipula al modelo (prompt injection) o publica contenido abusivo | El modelo solo propone un borrador; el servidor valida el esquema, filtra términos, limita publicaciones por teléfono y permite `reportar` |
+| Costo y límites de la API de DeepSeek | `max_tokens` acotado, máximo de turnos por conversación y comandos fijos sin modelo |
+| Publicación automática sin revisión previa | Confirmación explícita del oferente, oferta visible con su origen (`source`) y reporte que la oculta |
 | Atlas sin internet durante la demo | `DATA_SOURCE=seed` como valor por defecto; Mongo solo cuando todo lo demás ya funciona |
 | El webhook de Mercado Pago no llega (sin túnel) | Botón "simular pago" y consulta manual del estado de la orden |
 | Open-Meteo gratis no permite uso comercial | Aceptable para la demo; si el producto sigue, plan pago o proveedor alternativo |
@@ -466,6 +509,7 @@ El camino crítico es contrato, API con fixtures, front sobre la API y recién d
 ## 13. Preguntas abiertas
 
 - Confirmar en el panel de Vonage que `MASTER_KEY` es la clave y `VONAGE_API_KEY` el secreto (ver [Variables](#81-variables)).
+- Política de publicación: si las ofertas de WhatsApp salen solas o pasan por revisión humana en la demo.
 - De quién es la cuenta de Mercado Pago de prueba y quién la administra.
 - Si mostramos `communityShare` como dato real (acuerdo con comunidades) o como ejemplo en la demo.
 - Quién es el dueño del repo `jujuy-pay` para aprobar el PR.
