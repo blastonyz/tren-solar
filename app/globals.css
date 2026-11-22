@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@theme inline {
+  --color-solar: #ffd43b;
+  --color-arena: #f7f0e4;
+  --color-carbon: #1b1a18;
+  --color-impact: #6dbca7;
+}
+
 :root {
   --background: #0a0a0a;
   --foreground: #f4efe6;

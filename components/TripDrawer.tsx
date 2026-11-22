@@ -158,8 +158,8 @@ export function TripDrawer({ open, onClose, onRequestOpen, alerts }: Props) {
 
         {step === "done" ? (
           <div className="flex-1 space-y-4 overflow-y-auto p-4 pt-0">
-            <div className="rounded-xl border border-emerald-300/30 bg-emerald-400/10 p-4">
-              <p className="text-sm font-medium text-emerald-100">{paidLive ? "Pago aprobado" : "Pago aprobado (prueba)"}</p>
+            <div className="rounded-xl border border-impact/30 bg-impact/10 p-4">
+              <p className="text-sm font-medium text-impact">{paidLive ? "Pago aprobado" : "Pago aprobado (prueba)"}</p>
               <p className="mt-1 text-xs text-white/70">Orden {orderCode}{paidArs !== null ? ` · ${formatArs(paidArs)}` : ""}</p>
               <p className="mt-2 text-xs text-white/70">
                 Te avisamos por WhatsApp con el resumen y las alertas de los pueblos del viaje. En esta demo el aviso se simula.
@@ -175,7 +175,7 @@ export function TripDrawer({ open, onClose, onRequestOpen, alerts }: Props) {
               <div><dt className="text-white/50">Destino</dt><dd className="font-mono break-all">{wallet.destination}</dd></div>
               <div><dt className="text-white/50">Memo (obligatorio)</dt><dd className="font-mono">{wallet.memo}</dd></div>
             </dl>
-            <a href={wallet.uri} className="block rounded-lg border border-amber-200/60 px-4 py-2 text-center text-xs text-amber-50 hover:bg-amber-200/10">Abrir en mi wallet</a>
+            <a href={wallet.uri} className="block rounded-lg border border-solar/60 px-4 py-2 text-center text-xs text-amber-50 hover:bg-solar/10">Abrir en mi wallet</a>
             <button onClick={() => { setWallet(null); setStep("review"); }} className="text-xs text-white/60 underline-offset-2 hover:underline">Elegir otro medio</button>
           </div>
         ) : step === "paying" && lines.length === 0 ? (
@@ -187,7 +187,7 @@ export function TripDrawer({ open, onClose, onRequestOpen, alerts }: Props) {
             <div className="flex-1 space-y-4 overflow-y-auto p-4 pt-0">
               {TOWNS.filter((t) => townIds.includes(t.id)).map((town) => (
                 <section key={town.id}>
-                  <h3 className="mb-1.5 text-[11px] tracking-[0.25em] text-amber-100/70 uppercase">{town.name}</h3>
+                  <h3 className="mb-1.5 text-[11px] tracking-[0.25em] text-arena/70 uppercase">{town.name}</h3>
                   <ul className="space-y-2">
                     {lines.filter((l) => l.listing.townId === town.id).map(({ item, listing }) => (
                       <li key={listing.id} className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -212,7 +212,7 @@ export function TripDrawer({ open, onClose, onRequestOpen, alerts }: Props) {
             </div>
             <footer className="space-y-2 border-t border-white/10 p-4">
               <div className="flex justify-between text-sm"><span>Total</span><span className="font-semibold tabular-nums">{formatArs(trip.totalArs)}</span></div>
-              <p className="text-xs text-emerald-200/90">{formatArs(Math.round(trip.communityArs))} quedan en las comunidades de la Quebrada</p>
+              <p className="text-xs text-impact/90">{formatArs(Math.round(trip.communityArs))} quedan en las comunidades de la Quebrada</p>
               <fieldset className="space-y-1.5 pt-1">
                 <legend className="mb-1 text-[11px] tracking-[0.2em] text-white/50 uppercase">Medio de pago</legend>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -222,7 +222,7 @@ export function TripDrawer({ open, onClose, onRequestOpen, alerts }: Props) {
                       type="button"
                       onClick={() => setMethod(m.id)}
                       aria-pressed={method === m.id}
-                      className={`rounded-lg border px-2 py-1.5 text-left text-[11px] leading-tight transition ${method === m.id ? "border-amber-200/80 bg-amber-200/15 text-amber-50" : "border-white/15 text-white/70 hover:border-white/40"}`}
+                      className={`rounded-lg border px-2 py-1.5 text-left text-[11px] leading-tight transition ${method === m.id ? "border-solar/80 bg-solar/15 text-amber-50" : "border-white/15 text-white/70 hover:border-white/40"}`}
                     >
                       <span className="block font-medium">{m.label}</span>
                       <span className="text-white/50">{m.hint}</span>
@@ -236,8 +236,8 @@ export function TripDrawer({ open, onClose, onRequestOpen, alerts }: Props) {
                 )}
               </fieldset>
               {error && <p role="alert" className="text-xs text-rose-300">{error}</p>}
-              {notice && <p className="text-xs text-amber-100">{notice}</p>}
-              <button onClick={pay} disabled={step === "paying"} className="w-full rounded-lg bg-amber-300 px-4 py-2 text-sm font-medium text-black transition hover:bg-amber-200 disabled:opacity-60">
+              {notice && <p className="text-xs text-arena">{notice}</p>}
+              <button onClick={pay} disabled={step === "paying"} className="w-full rounded-lg bg-solar px-4 py-2 text-sm font-medium text-black transition hover:bg-solar disabled:opacity-60">
                 {step === "paying" ? "Procesando pago…" : `Pagar con ${METHODS.find((m) => m.id === method)?.label}`}
               </button>
               <p className="text-center text-[10px] text-white/40">Sin claves del proveedor el pago es de prueba: no se cobra dinero real.</p>
@@ -257,7 +257,7 @@ function AlertsForTrip({ alerts, townIds }: { alerts: Alert[]; townIds: string[]
       <h3 className="mb-1.5 text-[11px] tracking-[0.25em] text-white/50 uppercase">Alertas en tu recorrido</h3>
       <ul className="space-y-1.5">
         {relevant.slice(0, 4).map((alert) => (
-          <li key={alert.id} className="rounded-lg border border-amber-300/25 bg-amber-400/10 px-3 py-1.5 text-xs text-amber-100">{alert.message}</li>
+          <li key={alert.id} className="rounded-lg border border-solar/25 bg-amber-400/10 px-3 py-1.5 text-xs text-arena">{alert.message}</li>
         ))}
       </ul>
     </section>

@@ -71,7 +71,7 @@ function Loader() {
   if (!active) return null;
   return (
     <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-black/70">
-      <p className="text-sm tracking-[0.3em] text-amber-100/80 uppercase">
+      <p className="text-sm tracking-[0.3em] text-arena/80 uppercase">
         Cargando escena · {Math.round(progress)}%
       </p>
     </div>
@@ -152,7 +152,7 @@ function TripButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="pointer-events-auto rounded-full border border-amber-200/60 bg-amber-200/15 px-4 py-2 text-sm text-amber-50 backdrop-blur transition hover:bg-amber-200/25"
+      className="pointer-events-auto rounded-full border border-solar/60 bg-solar/15 px-4 py-2 text-sm text-amber-50 backdrop-blur transition hover:bg-solar/25"
     >
       Mi viaje{trip.count > 0 ? ` · ${trip.count}` : ""}
     </button>
@@ -213,12 +213,13 @@ export function Experience({ telemetry, alerts, townId, onTownChange, onOpenTrip
 
       {/* Velos para que el texto se lea sobre ambientes claros */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-44 bg-gradient-to-b from-black/60 to-transparent" />
+      <div aria-hidden className="pointer-events-none absolute top-0 left-0 z-[5] h-80 w-[44rem] max-w-full bg-[radial-gradient(ellipse_at_top_left,rgba(0,0,0,0.55),transparent_70%)]" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-48 bg-gradient-to-t from-black/50 to-transparent" />
 
       <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between gap-3 p-4 sm:p-8">
         <header className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[11px] tracking-[0.35em] text-amber-100/70 uppercase">Quebrada de Humahuaca · Jujuy</p>
+            <p className="text-[11px] tracking-[0.35em] text-arena/70 uppercase">Quebrada de Humahuaca · Jujuy</p>
             <h1 className={`mt-2 font-semibold tracking-tight transition-all ${started ? "text-3xl sm:text-4xl" : "text-4xl sm:text-6xl"}`}>
               Tren Solar
             </h1>
@@ -228,7 +229,7 @@ export function Experience({ telemetry, alerts, townId, onTownChange, onOpenTrip
               </p>
             )}
             {started && topAlert && (
-              <p className="mt-2 inline-block max-w-md rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-xs text-amber-100">
+              <p className="mt-2 inline-block max-w-md rounded-full border border-solar/30 bg-amber-400/10 px-3 py-1 text-xs text-arena">
                 {alerts.length} {alerts.length === 1 ? "alerta vigente" : "alertas vigentes"} · {topAlert.message}
               </p>
             )}
@@ -261,7 +262,7 @@ export function Experience({ telemetry, alerts, townId, onTownChange, onOpenTrip
                   onClick={() => setSceneId(s.id)}
                   className={`rounded-full border px-4 py-1.5 text-xs backdrop-blur transition ${
                     s.id === sceneId
-                      ? "border-amber-200/80 bg-amber-200/20 text-amber-50"
+                      ? "border-solar/80 bg-solar/20 text-amber-50"
                       : "border-white/20 bg-black/30 text-white/70 hover:border-white/50"
                   }`}
                 >
@@ -276,7 +277,7 @@ export function Experience({ telemetry, alerts, townId, onTownChange, onOpenTrip
                     setStarted(true);
                     selectTown("volcan");
                   }}
-                  className="rounded-full bg-amber-300 px-7 py-3 text-sm font-semibold text-black shadow-[0_0_30px_rgba(251,191,36,0.35)] transition hover:bg-amber-200"
+                  className="rounded-full bg-solar px-7 py-3 text-sm font-semibold text-black shadow-[0_0_30px_rgba(251,191,36,0.35)] transition hover:bg-solar"
                 >
                   Empezar viaje
                 </button>

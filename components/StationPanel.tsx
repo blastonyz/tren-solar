@@ -36,7 +36,7 @@ function formatExtra(key: string, value: unknown): string {
 
 const ALERT_STYLE = {
   info: "border-sky-300/30 bg-sky-400/10 text-sky-100",
-  warning: "border-amber-300/30 bg-amber-400/10 text-amber-100",
+  warning: "border-solar/30 bg-amber-400/10 text-arena",
   critical: "border-red-300/40 bg-red-500/15 text-red-100",
 } as const;
 
@@ -68,7 +68,7 @@ export function StationPanel({ townId, alerts, telemetry, onClose }: Props) {
     <aside className="pointer-events-auto flex max-h-full w-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-black/55 backdrop-blur-md">
       <header className="flex items-start justify-between gap-3 p-4 pb-2">
         <div>
-          <p className="text-[10px] tracking-[0.3em] text-amber-100/70 uppercase">Estación</p>
+          <p className="text-[10px] tracking-[0.3em] text-arena/70 uppercase">Estación</p>
           <h2 className="text-2xl font-semibold">{town.name}</h2>
           {occupancy !== undefined && (
             <p className="mt-0.5 text-xs text-white/60">Ocupación ahora: {occupancy}% (simulada)</p>
@@ -100,7 +100,7 @@ export function StationPanel({ townId, alerts, telemetry, onClose }: Props) {
             }}
             aria-pressed={c.id === category}
             className={`shrink-0 rounded-full border px-3 py-1 text-xs transition ${
-              c.id === category ? "border-amber-200/80 bg-amber-200/20 text-amber-50" : "border-white/20 text-white/70 hover:border-white/50"
+              c.id === category ? "border-solar/80 bg-solar/20 text-amber-50" : "border-white/20 text-white/70 hover:border-white/50"
             }`}
           >
             {c.label}
@@ -162,7 +162,7 @@ function ListingCard({ listing, alerts, open, onToggle }: { listing: Listing; al
           {provider && (
             <p>
               <span className="text-white/90">{provider.name}</span> · {provider.kind}. {provider.story}{" "}
-              <button onClick={() => showProvider(provider.id)} className="text-amber-200 underline-offset-2 hover:underline">
+              <button onClick={() => showProvider(provider.id)} className="text-solar underline-offset-2 hover:underline">
                 Ver todo lo de este productor
               </button>
             </p>
@@ -183,7 +183,7 @@ function ListingCard({ listing, alerts, open, onToggle }: { listing: Listing; al
       <button
         onClick={() => trip.add(listing.id)}
         className={`mt-3 w-full rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-          added ? "border border-amber-200/60 bg-amber-200/15 text-amber-50" : "bg-amber-300 text-black hover:bg-amber-200"
+          added ? "border border-solar/60 bg-solar/15 text-amber-50" : "bg-solar text-black hover:bg-solar"
         }`}
       >
         {added ? "En tu viaje · sumar otro" : "Sumar a mi viaje"}

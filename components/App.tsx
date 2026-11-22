@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Bridge } from "./Bridge";
 import { Catalog } from "./Catalog";
 import { Experience } from "./Experience";
+import { Impact } from "./Impact";
 import { TripDrawer } from "./TripDrawer";
 import { WhatsAppPanel } from "./WhatsAppPanel";
 import { CatalogProvider } from "./catalog-context";
@@ -15,7 +17,7 @@ function FloatingTrip({ onClick, hidden }: { onClick: () => void; hidden: boolea
   return (
     <button
       onClick={onClick}
-      className="fixed right-4 bottom-4 z-40 rounded-full bg-amber-300 px-5 py-3 text-sm font-semibold text-black shadow-lg transition hover:bg-amber-200"
+      className="fixed right-4 bottom-4 z-40 rounded-full bg-solar px-5 py-3 text-sm font-semibold text-black shadow-lg transition hover:bg-solar"
     >
       Mi viaje · {trip.count}
     </button>
@@ -40,7 +42,9 @@ export function App() {
           onOpenTrip={() => setTripOpen(true)}
           onOpenWhatsApp={() => setWaOpen(true)}
         />
-        <Catalog alerts={alerts} />
+        <Bridge />
+        <Catalog alerts={alerts} townId={townId} onTownChange={setTownId} />
+        <Impact />
         <TripDrawer open={tripOpen} onClose={() => setTripOpen(false)} onRequestOpen={() => setTripOpen(true)} alerts={alerts} />
         <WhatsAppPanel open={waOpen} onClose={() => setWaOpen(false)} alerts={alerts} defaultTownId={townId} />
         <FloatingTrip onClick={() => setTripOpen(true)} hidden={tripOpen || waOpen} />

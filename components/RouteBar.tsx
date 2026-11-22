@@ -7,7 +7,7 @@ const SEVERITY_RANK: Record<Severity, number> = { info: 0, warning: 1, critical:
 const DOT_STYLE: Record<Severity | "none", string> = {
   none: "bg-white/70",
   info: "bg-sky-300",
-  warning: "bg-amber-300",
+  warning: "bg-solar",
   critical: "bg-red-400",
 };
 
@@ -49,12 +49,12 @@ export function RouteBar({ selectedId, onSelect, telemetry, alerts }: Props) {
             >
               <span
                 className={`block h-[18px] w-[18px] rounded-full border-2 transition ${
-                  active ? "scale-125 border-amber-200 bg-amber-200/30" : "border-white/60 bg-black/50 group-hover:border-white"
+                  active ? "scale-125 border-solar bg-solar/30" : "border-white/60 bg-black/50 group-hover:border-white"
                 }`}
               >
                 <span className={`m-[3px] block h-2 w-2 rounded-full ${DOT_STYLE[worstSeverity(alerts, town.id)]}`} />
               </span>
-              <span className={`mt-1.5 text-[11px] whitespace-nowrap ${active ? "text-amber-100" : "text-white/70"}`}>
+              <span className={`mt-1.5 text-[11px] whitespace-nowrap ${active ? "text-arena" : "text-white/70"}`}>
                 {town.name}
               </span>
               {occupancy !== undefined && <span className="text-[10px] text-white/40 tabular-nums">{occupancy}%</span>}
@@ -63,7 +63,7 @@ export function RouteBar({ selectedId, onSelect, telemetry, alerts }: Props) {
         })}
         <div
           aria-hidden
-          className="pointer-events-none absolute top-[14px] h-3.5 w-5 -translate-x-1/2 rounded-sm bg-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.8)] transition-[left] duration-[4000ms] ease-linear"
+          className="pointer-events-none absolute top-[14px] h-3.5 w-5 -translate-x-1/2 rounded-sm bg-solar shadow-[0_0_14px_rgba(251,191,36,0.8)] transition-[left] duration-[4000ms] ease-linear"
           style={{ left: `${progress * 100}%` }}
         />
       </div>

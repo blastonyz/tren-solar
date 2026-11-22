@@ -196,7 +196,7 @@ export function WhatsAppPanel({ open, onClose, alerts, defaultTownId }: Props) {
             <p className="text-white/90">Antes de suscribirte (Sandbox de prueba)</p>
             <p>
               Mandá la frase de acceso al número <span className="font-medium text-white">+{SANDBOX_NUMBER}</span> desde tu WhatsApp.
-              {PASS_PHRASE ? <> La frase es: <span className="font-medium text-amber-100">{PASS_PHRASE}</span>.</> : " Pedísela al equipo."}
+              {PASS_PHRASE ? <> La frase es: <span className="font-medium text-arena">{PASS_PHRASE}</span>.</> : " Pedísela al equipo."}
             </p>
             <p className="text-white/45">El Sandbox solo le escribe a teléfonos autorizados.</p>
           </section>
@@ -209,7 +209,7 @@ export function WhatsAppPanel({ open, onClose, alerts, defaultTownId }: Props) {
                 onChange={(e) => setPhone(e.target.value)}
                 inputMode="tel"
                 placeholder="+54 9 388 412 3456"
-                className="mt-1 w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-amber-200/70"
+                className="mt-1 w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-solar/70"
               />
             </label>
             <label className="block text-xs text-white/60">
@@ -217,14 +217,14 @@ export function WhatsAppPanel({ open, onClose, alerts, defaultTownId }: Props) {
               <select
                 value={townId}
                 onChange={(e) => setPicked(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-amber-200/70"
+                className="mt-1 w-full rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-solar/70"
               >
                 {TOWNS.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
               </select>
             </label>
-            <button disabled={sending || !phone.trim()} className="w-full rounded-lg bg-amber-300 px-4 py-2 text-sm font-medium text-black transition hover:bg-amber-200 disabled:opacity-50">
+            <button disabled={sending || !phone.trim()} className="w-full rounded-lg bg-solar px-4 py-2 text-sm font-medium text-black transition hover:bg-solar disabled:opacity-50">
               {sending ? "Enviando…" : "Suscribirme"}
             </button>
             {status && <p className={`text-xs ${status.ok ? "text-emerald-200" : "text-red-200"}`}>{status.text}</p>}
@@ -270,14 +270,14 @@ export function WhatsAppPanel({ open, onClose, alerts, defaultTownId }: Props) {
                       value={pubText}
                       onChange={(e) => setPubText(e.target.value)}
                       placeholder="Ej: Tejidos en lana de llama en Tilcara, 28000"
-                      className="min-w-0 flex-1 rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-xs text-white outline-none focus:border-amber-200/70"
+                      className="min-w-0 flex-1 rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-xs text-white outline-none focus:border-solar/70"
                     />
-                    <button disabled={!pubText.trim()} className="rounded-lg bg-amber-300 px-3 py-2 text-xs font-medium text-black disabled:opacity-50">Enviar</button>
+                    <button disabled={!pubText.trim()} className="rounded-lg bg-solar px-3 py-2 text-xs font-medium text-black disabled:opacity-50">Enviar</button>
                   </form>
                 )}
                 {pubStep === "confirm" && (
                   <div className="mt-2 flex gap-2">
-                    <button onClick={() => confirmPublish(true)} className="rounded-full bg-amber-300 px-4 py-1.5 text-xs font-medium text-black">Sí, publicar</button>
+                    <button onClick={() => confirmPublish(true)} className="rounded-full bg-solar px-4 py-1.5 text-xs font-medium text-black">Sí, publicar</button>
                     <button onClick={() => confirmPublish(false)} className="rounded-full border border-white/25 px-4 py-1.5 text-xs text-white/75">No</button>
                   </div>
                 )}
