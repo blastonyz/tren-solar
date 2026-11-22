@@ -13,7 +13,7 @@ Fecha: 2026-11-22 · Versión viva en el doc compartido del equipo.
 7. [Pagos con Mercado Pago](#7-pagos-con-mercado-pago)
 8. [Configuración y secretos](#8-configuración-y-secretos)
 9. [Contratos de API](#9-contratos-de-api)
-10. [Reparto de tareas](#10-reparto-de-tareas)
+10. [Tareas](#10-tareas)
 11. [Orden de trabajo](#11-orden-de-trabajo)
 12. [Riesgos](#12-riesgos)
 13. [Preguntas abiertas](#13-preguntas-abiertas)
@@ -49,7 +49,7 @@ El MVP es una experiencia de turismo y economías regionales sobre el recorrido 
                                             ^
                                             | webhook y avisos
                                             v
- Front 3D (Blas) <------ JSON ------> API de Next (Agustín) ----> Open-Meteo  (lluvia y viento)
+ Front 3D <------ JSON ------> API de Next ----> Open-Meteo  (lluvia y viento)
  escena 3D y panel                    /api/telemetry          ----> NASA FIRMS  (focos de calor)
  de alertas                           /api/weather            ----> Telemetría  (tren simulado)
                                       /api/fires
@@ -214,11 +214,11 @@ El link lo genera siempre la API a partir de la preferencia. El MCP oficial de M
 
 ### 7.2 Qué se hace con el MCP
 
-| Paso | Quién |
+| Paso | Cómo |
 | --- | --- |
-| Crear la aplicación y obtener las credenciales de prueba | Leo |
-| Crear un usuario de prueba vendedor y otro comprador con saldo | Leo, con el MCP o desde el panel |
-| Configurar el webhook (URL del túnel) | Agustín, con el MCP o desde el panel |
+| Crear la aplicación y obtener las credenciales de prueba | Panel de desarrolladores (las credenciales por MCP requieren OAuth) |
+| Crear un usuario de prueba vendedor y otro comprador con saldo | MCP (`create_test_user` y `add_money_test_user`) o panel |
+| Configurar el webhook (URL del túnel) | MCP (`save_webhook`) o panel |
 
 ### 7.3 Reglas
 
@@ -332,22 +332,22 @@ interface Order {
 
 ### 9.2 Rutas
 
-| Método y ruta | Devuelve | Dueño |
-| --- | --- | --- |
-| `GET /api/telemetry` | Posición del tren, pasajeros, kW solares y ocupación por pueblo | Agustín |
-| `GET /api/weather?town=` | Lluvia y viento de las próximas horas para un pueblo | Agustín |
-| `GET /api/fires` | Focos de calor cercanos a la traza o a los pueblos | Agustín |
-| `GET /api/alerts` | Lista de `Alert` vigentes, ordenadas por severidad | Agustín |
-| `POST /api/subscribe` | Registra número de WhatsApp y pueblo | Agustín |
-| `POST /api/notify` | Envía una alerta a los suscriptos del pueblo por Vonage | Agustín |
-| `POST /api/whatsapp` | Webhook de Vonage: lee el comando recibido y responde con la API de mensajes | Agustín |
-| `GET /api/towns` | Estaciones con ocupación y alertas vigentes | Agustín |
-| `GET /api/catalog?town=&category=` | `Listing[]` con `suitability` calculada para las excursiones al aire libre | Agustín |
-| `GET /api/catalog/[id]` | Un ítem con su proveedor | Agustín |
-| `PUT /api/trips/[id]` | Guarda "Mi viaje" (`TripItem[]`) | Agustín |
-| `POST /api/checkout` | Crea la orden y la preferencia de Mercado Pago; devuelve `Order` con `initPoint` | Agustín |
-| `POST /api/mp/webhook` | Notificación de Mercado Pago: consulta el pago, actualiza la orden y avisa por WhatsApp | Agustín |
-| `POST /api/checkout/simulate` | Marca la orden como aprobada con `simulated: true` (solo demo) | Agustín |
+| Método y ruta | Devuelve |
+| --- | --- |
+| `GET /api/telemetry` | Posición del tren, pasajeros, kW solares y ocupación por pueblo |
+| `GET /api/weather?town=` | Lluvia y viento de las próximas horas para un pueblo |
+| `GET /api/fires` | Focos de calor cercanos a la traza o a los pueblos |
+| `GET /api/alerts` | Lista de `Alert` vigentes, ordenadas por severidad |
+| `POST /api/subscribe` | Registra número de WhatsApp y pueblo |
+| `POST /api/notify` | Envía una alerta a los suscriptos del pueblo por Vonage |
+| `POST /api/whatsapp` | Webhook de Vonage: lee el comando recibido y responde con la API de mensajes |
+| `GET /api/towns` | Estaciones con ocupación y alertas vigentes |
+| `GET /api/catalog?town=&category=` | `Listing[]` con `suitability` calculada para las excursiones al aire libre |
+| `GET /api/catalog/[id]` | Un ítem con su proveedor |
+| `PUT /api/trips/[id]` | Guarda "Mi viaje" (`TripItem[]`) |
+| `POST /api/checkout` | Crea la orden y la preferencia de Mercado Pago; devuelve `Order` con `initPoint` |
+| `POST /api/mp/webhook` | Notificación de Mercado Pago: consulta el pago, actualiza la orden y avisa por WhatsApp |
+| `POST /api/checkout/simulate` | Marca la orden como aprobada con `simulated: true` (solo demo) |
 
 ### 9.3 Reglas de alerta
 
@@ -378,40 +378,38 @@ Comandos que entiende el webhook:
 | `suscribir <pueblo>` | Alta de avisos para ese pueblo |
 | `baja` | Baja de los avisos |
 
-## 10. Reparto de tareas
+## 10. Tareas
 
-Blas hace el front, Agustín la API de Next y Leo coordina y cuenta con las cuentas externas. Lo primero es congelar los tipos compartidos en `lib/types.ts`, así Blas y Agustín trabajan en paralelo sin esperarse.
+Ya no hay reparto por persona: es un solo listado y cualquiera (o cualquier agente) toma la tarea libre que siga en el [orden de trabajo](#11-orden-de-trabajo). Lo primero es congelar los tipos compartidos en `lib/types.ts`, así la API y el front avanzan en paralelo sin esperarse. La escena base (tren, estación Volcán, ambientes y panel de telemetría simulada) ya está hecha; el front arranca por los datos y las pantallas.
 
-### 10.1 Leo · coordinación y cuentas
+### 10.1 Cuentas, datos y coordinación
 
-| # | Tarea | Listo cuando |
-| --- | --- | --- |
-| 1 | Congelar alcance, tipos compartidos y contrato de rutas (este doc) | Los tres aprobaron los tipos |
-| 2 | Activar el Sandbox de Vonage, autorizar los teléfonos del equipo con `PASS_PHRASE` y armar el QR/enlace de WhatsApp al número del Sandbox | Un teléfono de prueba recibe respuesta |
-| 3 | Pedir la MAP_KEY de FIRMS | La clave responde un `area` de prueba |
-| 4 | Guion del pitch y demo de 3 minutos, con el mensaje de impacto en turismo y economías regionales | Ensayo cronometrado |
-| 14 | Integración, PR y prueba final de punta a punta | Flujo completo de dato a aviso en el celular |
-| 15 | Decidir Atlas o MongoDB local y crear la base con su `MONGODB_URI` | La API conecta y `npm run seed` carga el catálogo |
-| 16 | Crear la aplicación de Mercado Pago y los usuarios de prueba (vendedor y comprador con saldo), con el MCP o el panel | Un pago de prueba se aprueba con el usuario comprador |
-| 17 | Cargar el catálogo ficticio realista (unos 6 ítems por pueblo y categoría) en `data/seed/` | Cada estación tiene ítems en las 6 categorías |
+| # | Tarea | Listo cuando | Estado |
+| --- | --- | --- | --- |
+| 1 | Congelar alcance, tipos compartidos y contrato de rutas (este doc) | El equipo aprobó los tipos | Pendiente |
+| 2 | Activar el Sandbox de Vonage, autorizar los teléfonos del equipo con `PASS_PHRASE` y armar el QR/enlace de WhatsApp al número del Sandbox | Un teléfono de prueba recibe respuesta | Pendiente |
+| 3 | Pedir la MAP_KEY de FIRMS | La clave responde un `area` de prueba | Pendiente |
+| 15 | Decidir Atlas o MongoDB local y crear la base con su `MONGODB_URI` | La API conecta y `npm run seed` carga el catálogo | Pendiente |
+| 16 | Crear la aplicación de Mercado Pago y los usuarios de prueba (vendedor y comprador con saldo), con el MCP o el panel | Un pago de prueba se aprueba con el usuario comprador | Pendiente |
+| 17 | Cargar el catálogo ficticio realista (unos 6 ítems por pueblo y categoría) en `data/seed/` | Cada estación tiene ítems en las 6 categorías | Pendiente |
+| 4 | Guion del pitch y demo de 3 minutos, con el mensaje de impacto en turismo y economías regionales | Ensayo cronometrado | Pendiente |
+| 14 | Integración, PR y prueba final de punta a punta | Flujo completo de dato a aviso en el celular | Pendiente |
 
-### 10.2 Agustín · API de Next
+### 10.2 API de Next
 
-| # | Tarea | Listo cuando |
-| --- | --- | --- |
-| 5 | Traza GeoJSON del tren, pueblos y helpers geoespaciales (`lib/geo.ts`) | Función de distancia punto a traza probada |
-| 6 | `GET /api/telemetry` con datos simulados | Devuelve el JSON del contrato |
-| 7 | `GET /api/weather` (proxy de Open-Meteo con caché) y `GET /api/fires` (FIRMS con respaldo en fixture) | Ambos responden sin internet usando fixtures |
-| 8 | `GET /api/alerts`: motor de reglas de crecida, fuego y aglomeración | Genera al menos una alerta por regla con datos de ejemplo |
-| 9 | `POST /api/whatsapp` (webhook entrante de Vonage con validación de firma) y `POST /api/notify` | Un mensaje "alertas" devuelve la lista actual |
-| 18 | Capa de repositorio con `mongo` y `seed`, esquemas, índices y script `npm run seed` | La API funciona igual con `DATA_SOURCE=seed` y con `mongo` |
-| 19 | `GET /api/towns`, `GET /api/catalog` y `PUT /api/trips/[id]` | El front lista ítems por estación y categoría |
-| 20 | Caudal (Open-Meteo Flood), alertas tempranas con `dedupeKey` y cálculo de `suitability` | Una excursión cambia de verde a rojo con un fixture de lluvia o de foco de calor |
-| 21 | `POST /api/checkout`, `POST /api/mp/webhook` idempotente y `POST /api/checkout/simulate` | Un pago de prueba deja la orden en `approved` y manda el WhatsApp |
+| # | Tarea | Listo cuando | Estado |
+| --- | --- | --- | --- |
+| 5 | Traza GeoJSON del tren, pueblos y helpers geoespaciales (`lib/geo.ts`) | Función de distancia punto a traza probada | Pendiente |
+| 6 | `GET /api/telemetry` con datos simulados | Devuelve el JSON del contrato | Pendiente |
+| 7 | `GET /api/weather` (proxy de Open-Meteo con caché) y `GET /api/fires` (FIRMS con respaldo en fixture) | Ambos responden sin internet usando fixtures | Pendiente |
+| 8 | `GET /api/alerts`: motor de reglas de crecida, fuego y aglomeración | Genera al menos una alerta por regla con datos de ejemplo | Pendiente |
+| 9 | `POST /api/whatsapp` (webhook entrante de Vonage con validación de firma) y `POST /api/notify` | Un mensaje "alertas" devuelve la lista actual | Pendiente |
+| 18 | Capa de repositorio con `mongo` y `seed`, esquemas, índices y script `npm run seed` | La API funciona igual con `DATA_SOURCE=seed` y con `mongo` | Pendiente |
+| 19 | `GET /api/towns`, `GET /api/catalog` y `PUT /api/trips/[id]` | El front lista ítems por estación y categoría | Pendiente |
+| 20 | Caudal (Open-Meteo Flood), alertas tempranas con `dedupeKey` y cálculo de `suitability` | Una excursión cambia de verde a rojo con un fixture de lluvia o de foco de calor | Pendiente |
+| 21 | `POST /api/checkout`, `POST /api/mp/webhook` idempotente y `POST /api/checkout/simulate` | Un pago de prueba deja la orden en `approved` y manda el WhatsApp | Pendiente |
 
-### 10.3 Blas · front 3D
-
-La escena base (tren, estación Volcán, ambientes y panel de telemetría simulada) ya está hecha; ver [Front 3D construido](#21-front-3d-construido). Quedan estas tareas:
+### 10.3 Front 3D
 
 | # | Tarea | Listo cuando | Estado |
 | --- | --- | --- | --- |
@@ -419,10 +417,10 @@ La escena base (tren, estación Volcán, ambientes y panel de telemetría simula
 | 11 | Mover el tren sobre la traza y mostrar marcadores de alertas por pueblo | Una alerta nueva aparece en la escena | Pendiente: la escena está lista, falta el movimiento y los marcadores |
 | 12 | Panel de alertas con severidad y suscripción (número de WhatsApp y pueblo) con el QR del Sandbox y la frase de acceso a la vista | Alguien se suscribe desde la pantalla | Pendiente |
 | 13 | Botón "simular mensaje" para la demo si falla la conectividad | La demo corre sin WhatsApp real | Pendiente |
-| 22 | Mapa de estaciones clickeable con vuelo de cámara y tren que frena en cada parada | Clic en una estación mueve la cámara y el tren |
-| 23 | Panel de estación con pestañas por categoría, chips de alerta y de aptitud, y detalle de ítem | Se ven las 6 categorías con datos del catálogo |
-| 24 | "Mi viaje", pantalla de pago y confirmación (con botón "simular pago") | De sumar un ítem a ver la orden aprobada sin salir de la app |
-| 25 | Animación de recorrido con las paradas elegidas y cambio de escena HDRI según la hora | El tren recorre el itinerario armado |
+| 22 | Mapa de estaciones clickeable con vuelo de cámara y tren que frena en cada parada | Clic en una estación mueve la cámara y el tren | Pendiente |
+| 23 | Panel de estación con pestañas por categoría, chips de alerta y de aptitud, y detalle de ítem | Se ven las 6 categorías con datos del catálogo | Pendiente |
+| 24 | "Mi viaje", pantalla de pago y confirmación (con botón "simular pago") | De sumar un ítem a ver la orden aprobada sin salir de la app | Pendiente |
+| 25 | Animación de recorrido con las paradas elegidas y cambio de escena HDRI según la hora | El tren recorre el itinerario armado | Pendiente |
 
 ### 10.4 Reglas de repo
 
@@ -433,7 +431,7 @@ La escena base (tren, estación Volcán, ambientes y panel de telemetría simula
 
 El camino crítico es contrato, API con fixtures, front sobre la API y recién después WhatsApp real. Cada paso deja algo demostrable.
 
-1. Contrato y tipos compartidos aprobados (tarea 1). Mientras tanto, Leo resuelve el Sandbox de Vonage y la cuenta de FIRMS (2 y 3).
+1. Contrato y tipos compartidos aprobados (tarea 1). Mientras tanto se resuelven el Sandbox de Vonage y la cuenta de FIRMS (2 y 3).
 2. API con datos simulados y fixtures (5 a 8) y front sobre mocks (10 y 11), en paralelo. La escena 3D ya está, así que el front arranca directo por los datos.
 3. Front apuntando a la API real y panel de alertas (12).
 4. Webhook y avisos por WhatsApp (9), con el botón de simulación como respaldo (13).
